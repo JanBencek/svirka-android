@@ -2,8 +2,14 @@
 # a throwaway Navidrome on the CI host (10.0.2.2 from the emulator).
 appId: com.bencit.svirka.debug
 ---
+- tapOn:
+    text: "Wait"
+    optional: true
 - launchApp:
     clearState: true
+- tapOn:
+    text: "Wait"
+    optional: true
 - extendedWaitUntil:
     visible: "Sign in"
     timeout: 60000
