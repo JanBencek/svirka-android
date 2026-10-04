@@ -8,8 +8,7 @@ appId: com.bencit.svirka.debug
     visible: "Sign in"
     timeout: 60000
 - takeScreenshot: 01-login
-- tapOn: "Server"
-- eraseText: 60
+- tapOn: "Clear server"
 - inputText: ${SERVER}
 - tapOn: "Username"
 - inputText: "admin"

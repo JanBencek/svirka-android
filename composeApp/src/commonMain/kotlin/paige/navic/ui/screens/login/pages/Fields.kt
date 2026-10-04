@@ -6,6 +6,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -28,6 +31,8 @@ import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.option_account_password
 import navic.composeapp.generated.resources.option_account_username
 import org.jetbrains.compose.resources.stringResource
+import paige.navic.icons.Icons
+import paige.navic.icons.outlined.Close
 import paige.navic.ui.svirka.SvirkaShapes
 
 @Composable
@@ -62,6 +67,17 @@ fun LoginScreenFields(
 		state = instanceState,
 		isError = instanceError,
 		label = { Text("Server") },
+		// The server is prefilled; one tap clears it (no backspacing through a URL).
+		trailingIcon = {
+			if (instanceState.text.isNotEmpty() && !isBusy) {
+				IconButton(onClick = {
+					instanceState.clearText()
+					instanceFocusRequester.requestFocus()
+				}) {
+					Icon(Icons.Outlined.Close, contentDescription = "Clear server")
+				}
+			}
+		},
 		lineLimits = TextFieldLineLimits.SingleLine,
 		enabled = !isBusy,
 		shape = SvirkaShapes.Md,
