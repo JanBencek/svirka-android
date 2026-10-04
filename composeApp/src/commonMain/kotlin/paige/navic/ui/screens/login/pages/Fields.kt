@@ -2,7 +2,6 @@ package paige.navic.ui.screens.login.pages
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -26,10 +25,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import navic.composeapp.generated.resources.Res
-import navic.composeapp.generated.resources.option_account_navidrome_instance
 import navic.composeapp.generated.resources.option_account_password
 import navic.composeapp.generated.resources.option_account_username
 import org.jetbrains.compose.resources.stringResource
+import paige.navic.ui.svirka.SvirkaShapes
 
 @Composable
 fun LoginScreenFields(
@@ -52,7 +51,6 @@ fun LoginScreenFields(
 	OutlinedTextField(
 		modifier = Modifier
 			.height(60.dp)
-			.padding(horizontal = 16.dp)
 			.fillMaxWidth()
 			.focusRequester(instanceFocusRequester)
 			.onFocusChanged { state ->
@@ -63,9 +61,10 @@ fun LoginScreenFields(
 			},
 		state = instanceState,
 		isError = instanceError,
-		label = { Text(stringResource(Res.string.option_account_navidrome_instance)) },
+		label = { Text("Server") },
 		lineLimits = TextFieldLineLimits.SingleLine,
 		enabled = !isBusy,
+		shape = SvirkaShapes.Md,
 		keyboardOptions = KeyboardOptions(
 			autoCorrectEnabled = false,
 			keyboardType = KeyboardType.Uri,
@@ -83,7 +82,6 @@ fun LoginScreenFields(
 	OutlinedTextField(
 		modifier = Modifier
 			.height(60.dp)
-			.padding(horizontal = 16.dp)
 			.fillMaxWidth()
 			.focusRequester(usernameFocusRequester)
 			.onFocusChanged { state ->
@@ -100,6 +98,7 @@ fun LoginScreenFields(
 		label = { Text(stringResource(Res.string.option_account_username)) },
 		lineLimits = TextFieldLineLimits.SingleLine,
 		enabled = !isBusy,
+		shape = SvirkaShapes.Md,
 		keyboardOptions = KeyboardOptions(
 			autoCorrectEnabled = false,
 			imeAction = ImeAction.Next,
@@ -114,7 +113,6 @@ fun LoginScreenFields(
 	OutlinedSecureTextField(
 		modifier = Modifier
 			.height(60.dp)
-			.padding(horizontal = 16.dp)
 			.fillMaxWidth()
 			.focusRequester(passwordFocusRequester)
 			.onFocusChanged { state ->
@@ -130,6 +128,7 @@ fun LoginScreenFields(
 		isError = passwordError,
 		label = { Text(stringResource(Res.string.option_account_password)) },
 		enabled = !isBusy,
+		shape = SvirkaShapes.Md,
 		keyboardOptions = KeyboardOptions(
 			autoCorrectEnabled = false,
 			keyboardType = KeyboardType.Password,

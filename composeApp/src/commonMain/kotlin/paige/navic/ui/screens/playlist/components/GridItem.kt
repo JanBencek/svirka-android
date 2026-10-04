@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.launch
@@ -27,6 +28,7 @@ import paige.navic.ui.components.layouts.ArtGridItem
 import paige.navic.ui.components.sheets.CollectionSheet
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.playlist.dialogs.PlaylistUpdateDialog
+import paige.navic.ui.svirka.detail.SvirkaPlaylistCover
 
 @Composable
 fun PlaylistListScreenGridItem(
@@ -61,18 +63,12 @@ fun PlaylistListScreenGridItem(
 			onLongClick = onSelect,
 			coverArtId = playlist.coverArtId,
 			title = playlist.name,
-			subtitle = buildString {
-				append(
-					pluralStringResource(
-						Res.plurals.count_songs,
-						playlist.songCount,
-						playlist.songCount
-					)
-				)
-				playlist.comment?.let {
-					append("\n${playlist.comment}\n")
-				}
-			},
+			subtitle = pluralStringResource(
+				Res.plurals.count_songs,
+				playlist.songCount,
+				playlist.songCount
+			),
+			cover = { coverModifier -> SvirkaPlaylistCover(iconSize = 48.dp, modifier = coverModifier) },
 			id = playlist.id,
 			tab = tab
 		)

@@ -4,14 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,38 +16,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.collections.immutable.persistentListOf
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_add_to_queue
 import navic.composeapp.generated.resources.action_play_next
-import navic.composeapp.generated.resources.info_download_failed
-import navic.composeapp.generated.resources.info_downloaded
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import paige.navic.LocalNavStack
 import paige.navic.data.database.entities.DownloadEntity
 import paige.navic.data.database.entities.DownloadStatus
-import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.models.DomainExplicitStatus
 import paige.navic.domain.models.DomainSong
 import paige.navic.icons.Icons
-import paige.navic.icons.filled.Star
-import paige.navic.icons.outlined.Check
-import paige.navic.icons.outlined.DownloadOff
 import paige.navic.icons.outlined.Queue
 import paige.navic.icons.outlined.QueuePlayNext
-import paige.navic.ui.components.common.CoverArt
+import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.common.SwipeActionRow
+import paige.navic.ui.components.common.rowPlaybackState
 import paige.navic.ui.components.sheets.SongSheet
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.playlist.dialogs.PlaylistUpdateDialog
-import paige.navic.util.core.InlineExplicitIcon
+import paige.navic.ui.svirka.SvirkaShapes
+import paige.navic.ui.svirka.rows.SvirkaRowCover
+import paige.navic.ui.svirka.rows.SvirkaRowIndicators
+import paige.navic.ui.svirka.rows.SvirkaTrackRow
 import paige.navic.util.core.buildSongInfoString
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SongListScreenItem(
 	modifier: Modifier,
@@ -75,7 +66,9 @@ fun SongListScreenItem(
 ) {
 	val backStack = LocalNavStack.current
 	var playlistDialogShown by rememberSaveable { mutableStateOf(false) }
-	val preferenceManager = koinInject<PreferenceManager>()
+	val player = koinInject<MediaPlayerViewModel>()
+	// Not the whole uiState: it ticks every 200ms (see rowPlaybackState).
+	val playbackState by player.rowPlaybackState(song.id)
 
 	SwipeActionRow(
 		modifier = modifier,
@@ -85,7 +78,7 @@ fun SongListScreenItem(
 			Box(
 				modifier = Modifier
 					.fillMaxSize()
-					.clip(MaterialTheme.shapes.extraSmall)
+					.clip(SvirkaShapes.Md)
 					.background(MaterialTheme.colorScheme.primaryContainer)
 			) {
 				Icon(
@@ -102,7 +95,7 @@ fun SongListScreenItem(
 			Box(
 				modifier = Modifier
 					.fillMaxSize()
-					.clip(MaterialTheme.shapes.extraSmall)
+					.clip(SvirkaShapes.Md)
 					.background(MaterialTheme.colorScheme.primaryContainer)
 			) {
 				Icon(
@@ -117,89 +110,30 @@ fun SongListScreenItem(
 		},
 	) {
 		Box {
-			// Tap + long-press live on ListItem's native clickable (reliable
-			// ripple/semantics); SwipeActionRow only claims horizontal swipes.
-			ListItem(
+			// Plain ellipsis text, NOT MarqueeText: list rows must not run
+			// infinite scroll animations (jank while scrolling the list).
+			SvirkaTrackRow(
+				title = buildAnnotatedString {
+					append(song.title)
+					if (song.explicitStatus == DomainExplicitStatus.Explicit) {
+						append(" ")
+						appendInlineContent("InlineExplicitIcon")
+					}
+				},
+				// Artists are plain text here: a tap anywhere on the row must
+				// only play. Artist navigation lives in the long-press SongSheet.
+				subtitle = buildSongInfoString(
+					song = song,
+					onClickArtist = { backStack.add(Screen.ArtistDetail(it)) },
+					showYear = false,
+					clickableArtist = false
+				),
+				isCurrent = playbackState != null,
 				onClick = onClick,
 				onLongClick = onSelect,
-				content = {
-					// Plain ellipsis text, NOT MarqueeText: list rows must not run
-					// infinite scroll animations (jank while scrolling the list).
-					Text(
-						text = buildAnnotatedString {
-							append(song.title)
-							if (song.explicitStatus == DomainExplicitStatus.Explicit) {
-								append(" ")
-								appendInlineContent("InlineExplicitIcon")
-							}
-						},
-						inlineContent = InlineExplicitIcon,
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis
-					)
-				},
-				supportingContent = {
-					Text(
-						text = buildSongInfoString(
-							song = song,
-							// Artists are plain text here: a tap anywhere on the row
-							// must only play. Artist navigation lives in the
-							// long-press SongSheet ("View artist").
-							onClickArtist = { backStack.add(Screen.ArtistDetail(it)) },
-							clickableArtist = false
-						),
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis
-					)
-				},
-				leadingContent = {
-					CoverArt(
-						coverArtId = song.coverArtId,
-						modifier = Modifier.size(50.dp),
-						thumbnail = true,
-						shape = preferenceManager.coverArtShape.decreasedShape
-					)
-				},
-				trailingContent = {
-					if (starred) {
-						Icon(
-							Icons.Filled.Star,
-							null,
-							modifier = Modifier.size(16.dp)
-						)
-					}
-					if (download != null) {
-						when (download.status) {
-							DownloadStatus.DOWNLOADING -> {
-								CircularProgressIndicator(
-									progress = { download.progress },
-									modifier = Modifier.size(16.dp),
-									strokeWidth = 2.dp
-								)
-							}
-
-							DownloadStatus.DOWNLOADED -> {
-								Icon(
-									Icons.Outlined.Check,
-									contentDescription = stringResource(Res.string.info_downloaded),
-									modifier = Modifier.size(16.dp),
-									tint = MaterialTheme.colorScheme.primary
-								)
-							}
-
-							DownloadStatus.FAILED -> {
-								Icon(
-									Icons.Outlined.DownloadOff,
-									contentDescription = stringResource(Res.string.info_download_failed),
-									modifier = Modifier.size(16.dp),
-									tint = MaterialTheme.colorScheme.error
-								)
-							}
-
-							else -> {}
-						}
-					}
-				}
+				duration = song.duration,
+				leading = { SvirkaRowCover(song.coverArtId, playbackState) },
+				trailing = { SvirkaRowIndicators(starred = starred, download = download) }
 			)
 			if (selected) {
 				SongSheet(

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import paige.navic.domain.repositories.SongRepository
@@ -21,12 +23,17 @@ class NowPlayingViewModel(
 
 	init {
 		viewModelScope.launch {
-			player.uiState.collect { state ->
-				state.currentSong?.let { song ->
-					songIsStarred.value = songRepository.isSongStarred(song)
-					songRating.value = songRepository.getSongRating(song)
+			// Only when the track changes: uiState ticks every 200ms (progress), and the
+			// mini player (on every screen) uses this VM — don't hit the DB per tick.
+			player.uiState
+				.map { it.currentSong }
+				.distinctUntilChangedBy { it?.id }
+				.collect { song ->
+					song?.let {
+						songIsStarred.value = songRepository.isSongStarred(it)
+						songRating.value = songRepository.getSongRating(it)
+					}
 				}
-			}
 		}
 	}
 

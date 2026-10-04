@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
@@ -27,7 +28,9 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import paige.navic.LocalNavStack
 import paige.navic.ui.navigation.Screen
-import paige.navic.ui.theme.defaultFont
+import paige.navic.ui.svirka.SvirkaShapes
+import paige.navic.ui.svirka.SvirkaText
+import paige.navic.ui.svirka.mutedColor
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun LazyGridScope.libraryScreenOverviewButton(
@@ -41,7 +44,7 @@ fun LazyGridScope.libraryScreenOverviewButton(
 		Button(
 			modifier = Modifier
 				.fillMaxWidth()
-				.height(42.dp)
+				.height(44.dp)
 				.padding(
 					start = if (start) 16.dp else 0.dp,
 					end = if (!start) 16.dp else 0.dp,
@@ -49,12 +52,12 @@ fun LazyGridScope.libraryScreenOverviewButton(
 			contentPadding = PaddingValues(horizontal = 12.dp),
 			elevation = null,
 			shapes = ButtonDefaults.shapes(
-				shape = MaterialTheme.shapes.small,
-				pressedShape = MaterialTheme.shapes.extraSmall
+				shape = SvirkaShapes.Lg,
+				pressedShape = SvirkaShapes.Md
 			),
 			colors = ButtonDefaults.buttonColors(
 				containerColor = MaterialTheme.colorScheme.surfaceContainer,
-				contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+				contentColor = MaterialTheme.colorScheme.onSurface
 			),
 			onClick = dropUnlessResumed {
 				if (backStack.lastOrNull() !is Screen.AlbumList) {
@@ -68,13 +71,15 @@ fun LazyGridScope.libraryScreenOverviewButton(
 			) {
 				Icon(
 					icon,
-					contentDescription = null
+					contentDescription = null,
+					modifier = Modifier.size(18.dp),
+					tint = mutedColor
 				)
 				Spacer(Modifier.width(10.dp))
 				Text(
 					stringResource(label),
 					maxLines = 1,
-					fontFamily = defaultFont(100, round = 100f),
+					style = SvirkaText.RowTitle,
 					autoSize = TextAutoSize.StepBased(minFontSize = 1.sp, maxFontSize = 14.sp),
 				)
 			}

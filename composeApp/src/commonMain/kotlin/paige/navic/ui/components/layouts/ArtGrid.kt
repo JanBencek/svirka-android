@@ -24,15 +24,14 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +45,9 @@ import paige.navic.domain.models.settings.ListViewMode
 import paige.navic.ui.components.common.CoverArt
 import paige.navic.ui.components.common.ErrorBox
 import paige.navic.ui.core.UiState
+import paige.navic.ui.svirka.SvirkaShapes
+import paige.navic.ui.svirka.SvirkaText
+import paige.navic.ui.svirka.mutedColor
 import paige.navic.util.ui.EmphasizedDecelerateEasing
 import paige.navic.util.ui.shimmerLoading
 
@@ -88,7 +90,6 @@ fun ArtGrid(
 	)
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ArtGridItem(
 	modifier: Modifier = Modifier,
@@ -101,7 +102,11 @@ fun ArtGridItem(
 	// this parameter is a shitty workaround for shared element
 	// transitions being performed when switching between tabs
 	// this can just be an empty string if the tab is unknown
-	tab: String
+	tab: String,
+	/** Cover shape; Svirka AlbumCard = rounded-md, ArtistCard passes CircleShape. */
+	coverShape: Shape = SvirkaShapes.Md,
+	/** Replaces the artwork (e.g. the playlist gradient); receives the sized + shared-element modifier. */
+	cover: (@Composable (Modifier) -> Unit)? = null
 ) {
 	val interactionSource = remember { MutableInteractionSource() }
 	with(LocalSharedTransitionScope.current) {
@@ -119,37 +124,44 @@ fun ArtGridItem(
 				}
 				.then(modifier)
 		) {
-			CoverArt(
-				coverArtId = coverArtId,
-				contentDescription = title,
-				modifier = Modifier
-					.fillMaxWidth()
-					.sharedElement(
-						sharedContentState = this@with.rememberSharedContentState("${tab}-${id}-cover"),
-						boundsTransform = BoundsTransform { _, _ ->
-							tween(
-								durationMillis = 500,
-								easing = EmphasizedDecelerateEasing
-							)
-						},
-						animatedVisibilityScope = LocalNavAnimatedContentScope.current
-					),
-				interactionSource = interactionSource
-			)
+			val coverModifier = Modifier
+				.fillMaxWidth()
+				.aspectRatio(1f)
+				.sharedElement(
+					sharedContentState = this@with.rememberSharedContentState("${tab}-${id}-cover"),
+					boundsTransform = BoundsTransform { _, _ ->
+						tween(
+							durationMillis = 500,
+							easing = EmphasizedDecelerateEasing
+						)
+					},
+					animatedVisibilityScope = LocalNavAnimatedContentScope.current
+				)
+			if (cover != null) {
+				cover(coverModifier)
+			} else {
+				CoverArt(
+					coverArtId = coverArtId,
+					contentDescription = title,
+					modifier = coverModifier,
+					interactionSource = interactionSource,
+					shape = coverShape
+				)
+			}
 			Text(
 				text = title,
-				style = MaterialTheme.typography.titleSmallEmphasized,
-				modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-				maxLines = 2,
+				style = SvirkaText.RowTitle,
+				modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+				maxLines = 1,
 				overflow = TextOverflow.Ellipsis
 			)
 			subtitle?.let {
 				Text(
 					text = subtitle,
-					style = MaterialTheme.typography.bodySmall,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					style = SvirkaText.Body,
+					color = mutedColor,
 					modifier = Modifier.fillMaxWidth(),
-					maxLines = 2,
+					maxLines = 1,
 					overflow = TextOverflow.Ellipsis
 				)
 			}
@@ -170,7 +182,7 @@ fun ArtGridPlaceholder(
 					.aspectRatio(1f)
 					// placeholders shouldn't use continuous corners
 					// because it's less performant
-					.clip(RoundedCornerShape(16.0.dp))
+					.clip(SvirkaShapes.Md)
 					.shimmerLoading()
 			)
 			Box(

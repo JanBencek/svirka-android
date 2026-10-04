@@ -26,9 +26,11 @@ import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -46,6 +48,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -68,6 +72,7 @@ import navic.composeapp.generated.resources.info_not_playing
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import paige.navic.LocalNavStack
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.SessionManager
@@ -76,16 +81,19 @@ import paige.navic.domain.models.settings.MiniPlayerStyle
 import paige.navic.domain.models.settings.NavbarConfig
 import paige.navic.icons.Icons
 import paige.navic.icons.filled.Note
-import paige.navic.icons.filled.Pause
-import paige.navic.icons.filled.Play
 import paige.navic.icons.filled.SkipNext
 import paige.navic.icons.outlined.Radio
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.common.MarqueeText
-import paige.navic.ui.components.common.playPauseIconPainter
 import paige.navic.ui.core.UiState
 import paige.navic.ui.navigation.Screen
+import paige.navic.ui.screens.nowPlaying.viewmodels.NowPlayingViewModel
 import paige.navic.ui.screens.settings.viewmodels.NavtabsViewModel
+import paige.navic.ui.svirka.SvirkaIcons
+import paige.navic.ui.svirka.SvirkaLikeButton
+import paige.navic.ui.svirka.SvirkaShapes
+import paige.navic.ui.svirka.SvirkaText
+import paige.navic.ui.svirka.mutedColor
 import coil3.compose.LocalPlatformContext as LocalCoilPlatformContext
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
@@ -109,6 +117,9 @@ fun MiniPlayer(
 
 	val playerState by player.uiState.collectAsState()
 	val song = playerState.currentSong
+	// Same star mechanism as the NowPlaying screen's star button.
+	val nowPlayingViewModel = koinViewModel<NowPlayingViewModel> { parametersOf(player) }
+	val songIsStarred by nowPlayingViewModel.songIsStarred.collectAsState()
 
 	val coilPlatformContext = LocalCoilPlatformContext.current
 	val sessionManager = koinInject<SessionManager>()
@@ -130,11 +141,8 @@ fun MiniPlayer(
 			46.dp
 		else 8.dp
 	)
-	val iconSize = if (detached) 24.dp else 32.dp
-
-	val shape = ContinuousRoundedRectangle(
-		if (detached) 16.dp else 0.dp
-	)
+	// Svirka now-playing bar: rounded-lg card when detached, flush when unified.
+	val shape: Shape = if (detached) SvirkaShapes.Lg else RectangleShape
 
 	val onClick = dropUnlessResumed {
 		if (!backStack.contains(Screen.NowPlaying)) {
@@ -204,7 +212,7 @@ fun MiniPlayer(
 				else PaddingValues(),
 				verticalAlignment = Alignment.CenterVertically,
 				colors = ListItemDefaults.colors(
-					containerColor = NavigationBarDefaults.containerColor
+					containerColor = MaterialTheme.colorScheme.surfaceContainer
 				),
 				shapes = ListItemDefaults.shapes(
 					shape = shape,
@@ -228,7 +236,7 @@ fun MiniPlayer(
 							contentDescription = null,
 							contentScale = ContentScale.Crop,
 							modifier = Modifier
-								.size(if (detached) 48.dp else 50.dp)
+								.size(56.dp)
 								.padding(if (playerState.isLoading) 8.dp else 0.dp)
 								.clip(
 									ContinuousRoundedRectangle(coverRounding)
@@ -259,12 +267,16 @@ fun MiniPlayer(
 				},
 				trailingContent = {
 					Row(
-						horizontalArrangement = Arrangement.spacedBy(
-							if (detached) 8.dp else 12.dp
-						)
+						verticalAlignment = Alignment.CenterVertically,
+						horizontalArrangement = Arrangement.spacedBy(4.dp)
 					) {
-						val colors = IconButtonDefaults.iconButtonVibrantColors()
-						IconButton(
+						if (hasSong && !isRadio) {
+							SvirkaLikeButton(
+								liked = songIsStarred,
+								onToggle = { if (isInteractive) nowPlayingViewModel.starSong(!songIsStarred) }
+							)
+						}
+						FilledIconButton(
 							onClick = {
 								if (playerState.isPaused) {
 									player.resume()
@@ -273,55 +285,48 @@ fun MiniPlayer(
 								}
 							},
 							enabled = isInteractive,
-							colors = colors
+							shape = CircleShape,
+							colors = IconButtonDefaults.filledIconButtonColors(
+								containerColor = MaterialTheme.colorScheme.primary,
+								contentColor = MaterialTheme.colorScheme.onPrimary
+							),
+							modifier = Modifier.size(40.dp)
 						) {
-							val painter = playPauseIconPainter(playerState.isPaused)
-							val description = stringResource(
-								if (playerState.isPaused)
-									Res.string.action_play
-								else Res.string.action_pause
+							Icon(
+								imageVector = if (playerState.isPaused) SvirkaIcons.Play else SvirkaIcons.Pause,
+								contentDescription = stringResource(
+									if (playerState.isPaused)
+										Res.string.action_play
+									else Res.string.action_pause
+								),
+								modifier = Modifier.size(20.dp)
 							)
-							if (painter != null) {
-								Icon(
-									painter = painter,
-									contentDescription = description,
-									modifier = Modifier.size(iconSize)
-								)
-							} else {
-								Icon(
-									imageVector = if (playerState.isPaused)
-										Icons.Filled.Play
-									else Icons.Filled.Pause,
-									contentDescription = description,
-									modifier = Modifier.size(iconSize)
-								)
-							}
 						}
 						IconButton(
 							onClick = {
 								player.next()
 							},
-							enabled = isInteractive,
-							colors = colors
+							enabled = isInteractive
 						) {
 							Icon(
 								imageVector = Icons.Filled.SkipNext,
 								contentDescription = stringResource(Res.string.action_next_song),
-								modifier = Modifier.size(iconSize)
+								modifier = Modifier.size(20.dp)
 							)
 						}
 					}
 				},
 				content = {
 					song?.title?.let { title ->
-						MarqueeText(title)
+						MarqueeText(title, style = SvirkaText.RowTitle)
 					}
 				},
 				supportingContent = {
+					val artistStyle = SvirkaText.Small.copy(color = mutedColor)
 					if (song != null) {
-						MarqueeText(song.artistName)
+						MarqueeText(song.artistName, style = artistStyle)
 					} else {
-						MarqueeText(stringResource(Res.string.info_not_playing))
+						MarqueeText(stringResource(Res.string.info_not_playing), style = artistStyle)
 					}
 				},
 				enabled = enabled
@@ -344,19 +349,17 @@ fun MiniPlayer(
 						.align(alignment),
 					contentAlignment = alignment
 				) {
-					if (!detached) {
-						Box(
-							Modifier
-								.background(MaterialTheme.colorScheme.surfaceBright)
-								.fillMaxWidth()
-								.height(3.dp)
-						)
-					}
+					Box(
+						Modifier
+							.background(MaterialTheme.colorScheme.surfaceVariant)
+							.fillMaxWidth()
+							.height(2.dp)
+					)
 					Box(
 						Modifier
 							.background(MaterialTheme.colorScheme.primary.copy(alpha = alpha))
 							.fillMaxWidth(if (song != null) progress else 0f)
-							.height(3.dp)
+							.height(2.dp)
 					)
 					Box(
 						Modifier

@@ -9,9 +9,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationItemIconPosition
 import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.ShortNavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -125,7 +127,7 @@ private enum class NavItem(
 @Composable
 fun BottomBar(
 	modifier: Modifier = Modifier,
-	containerColor: Color = NavigationBarDefaults.containerColor,
+	containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
 	windowInsets: WindowInsets = NavigationBarDefaults.windowInsets,
 	enabled: Boolean = true
 ) {
@@ -137,6 +139,11 @@ fun BottomBar(
 	val tabs = ((state as? UiState.Success)?.data ?: NavbarConfig.default)
 		.tabs.filter { tab -> tab.visible }
 	val preferenceManager = koinInject<PreferenceManager>()
+
+	// Svirka nav: active = primary on a primary/15 pill, inactive = muted.
+	val activeColor = MaterialTheme.colorScheme.primary
+	val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
+	val pillColor = activeColor.copy(alpha = 0.15f)
 
 	AnimatedContent(
 		preferenceManager.navigationBarStyle != NavigationBarStyle.Short
@@ -169,6 +176,13 @@ fun BottomBar(
 						enabled = enabled,
 						alwaysShowLabel = preferenceManager.navigationBarLabelVisibility
 							== NavigationBarLabelVisibility.Always,
+						colors = NavigationBarItemDefaults.colors(
+							selectedIconColor = activeColor,
+							selectedTextColor = activeColor,
+							indicatorColor = pillColor,
+							unselectedIconColor = inactiveColor,
+							unselectedTextColor = inactiveColor
+						),
 						onClick = {
 							backStack.apply {
 								clear()
@@ -230,6 +244,13 @@ fun BottomBar(
 						else NavigationItemIconPosition.Top,
 						selected = backStack.last() == item.destination,
 						enabled = enabled,
+						colors = ShortNavigationBarItemDefaults.colors(
+							selectedIconColor = activeColor,
+							selectedTextColor = activeColor,
+							selectedIndicatorColor = pillColor,
+							unselectedIconColor = inactiveColor,
+							unselectedTextColor = inactiveColor
+						),
 						onClick = {
 							backStack.apply {
 								clear()

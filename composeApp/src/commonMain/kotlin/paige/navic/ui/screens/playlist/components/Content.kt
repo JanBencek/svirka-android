@@ -4,16 +4,12 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.Modifier
-import navic.composeapp.generated.resources.Res
-import navic.composeapp.generated.resources.info_no_playlists_short
-import org.jetbrains.compose.resources.stringResource
 import paige.navic.domain.models.DomainPlaylist
 import paige.navic.domain.models.settings.ListViewMode
-import paige.navic.icons.Icons
-import paige.navic.icons.outlined.PlaylistRemove
-import paige.navic.ui.components.common.ContentUnavailable
 import paige.navic.ui.components.layouts.artGridPlaceholder
 import paige.navic.ui.core.UiState
+import paige.navic.ui.svirka.SvirkaEmptyState
+import paige.navic.ui.svirka.SvirkaIcons
 
 fun LazyGridScope.playlistListScreenContent(
 	state: UiState<List<DomainPlaylist>>,
@@ -64,9 +60,10 @@ fun LazyGridScope.playlistListScreenContent(
 
 			else -> {
 				item(span = { GridItemSpan(maxLineSpan) }) {
-					ContentUnavailable(
-						icon = Icons.Outlined.PlaylistRemove,
-						label = stringResource(Res.string.info_no_playlists_short)
+					SvirkaEmptyState(
+						title = "No playlists yet",
+						hint = "Create one and start collecting your favorite songs.",
+						icon = SvirkaIcons.ListMusic
 					)
 				}
 			}

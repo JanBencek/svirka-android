@@ -1,34 +1,23 @@
 package paige.navic.ui.screens.collection.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.launch
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_delete_download
-import navic.composeapp.generated.resources.action_play
-import navic.composeapp.generated.resources.action_shuffle
 import navic.composeapp.generated.resources.info_download_failed
 import navic.composeapp.generated.resources.notice_deleted_download
 import navic.composeapp.generated.resources.notice_download_started
@@ -39,14 +28,13 @@ import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.manager.SnackBarManager
 import paige.navic.domain.models.DomainSongCollection
 import paige.navic.icons.Icons
-import paige.navic.icons.filled.Play
 import paige.navic.icons.outlined.Close
 import paige.navic.icons.outlined.Delete
-import paige.navic.icons.outlined.Download
 import paige.navic.icons.outlined.DownloadOff
-import paige.navic.icons.outlined.Shuffle
 import paige.navic.shared.MediaPlayerViewModel
-import paige.navic.ui.theme.defaultFont
+import paige.navic.ui.svirka.SvirkaIcons
+import paige.navic.ui.svirka.SvirkaPlayShuffleRow
+import paige.navic.ui.svirka.mutedColor
 
 @Composable
 fun CollectionDetailScreenHeadingRowButtons(
@@ -61,57 +49,19 @@ fun CollectionDetailScreenHeadingRowButtons(
 		.getCollectionDownloadStatus(collection.songs.map { it.id })
 		.collectAsState(initial = DownloadStatus.NOT_DOWNLOADED)
 
-	Row(
-		modifier = Modifier.padding(horizontal = 31.dp, vertical = 10.dp),
-		verticalAlignment = Alignment.CenterVertically,
-		horizontalArrangement = Arrangement.spacedBy(
-			10.dp,
-			alignment = Alignment.CenterHorizontally
-		)
+	val hasSongs = collection.songs.isNotEmpty()
+
+	SvirkaPlayShuffleRow(
+		onPlay = { player.playNow(collection) },
+		onShuffle = { player.shufflePlay(collection) },
+		enabled = hasSongs,
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(horizontal = 16.dp)
+			.padding(bottom = 24.dp)
 	) {
-		val buttonShape = ContinuousCapsule
-		val buttonHeight = 44.dp
-		OutlinedButton(
-			modifier = Modifier.size(width = 52.dp, height = buttonHeight),
-			onClick = {
-				player.shufflePlay(collection)
-			},
-			shape = buttonShape,
-			contentPadding = PaddingValues(0.dp),
-			enabled = collection.songs.isNotEmpty()
-		) {
-			Icon(
-				Icons.Outlined.Shuffle,
-				contentDescription = stringResource(Res.string.action_shuffle),
-				modifier = Modifier.size(24.dp)
-			)
-		}
-		Button(
-			modifier = Modifier.weight(1f).height(buttonHeight),
-			onClick = {
-				player.playNow(collection)
-			},
-			shape = buttonShape,
-			enabled = collection.songs.isNotEmpty()
-		) {
-			Icon(
-				Icons.Filled.Play,
-				null,
-				modifier = Modifier.size(25.dp).padding(end = 3.dp)
-			)
-			Text(
-				stringResource(Res.string.action_play),
-				maxLines = 1,
-				autoSize = TextAutoSize.StepBased(
-					minFontSize = 1.sp,
-					maxFontSize = 15.sp
-				),
-				fontWeight = FontWeight.SemiBold,
-				fontFamily = defaultFont(round = 100f)
-			)
-		}
-		OutlinedButton(
-			modifier = Modifier.size(width = 52.dp, height = buttonHeight),
+		IconButton(
+			modifier = Modifier.size(40.dp),
 			onClick = {
 				scope.launch {
 					when (downloadStatus) {
@@ -131,16 +81,14 @@ fun CollectionDetailScreenHeadingRowButtons(
 					}
 				}
 			},
-			shape = buttonShape,
-			enabled = collection.songs.isNotEmpty() ||
-				(downloadStatus == DownloadStatus.DOWNLOADED || downloadStatus == DownloadStatus.DOWNLOADING),
-			contentPadding = PaddingValues(0.dp)
+			enabled = hasSongs ||
+				(downloadStatus == DownloadStatus.DOWNLOADED || downloadStatus == DownloadStatus.DOWNLOADING)
 		) {
 			when (downloadStatus) {
 				DownloadStatus.DOWNLOADING -> {
 					Box(contentAlignment = Alignment.Center) {
 						CircularProgressIndicator(
-							modifier = Modifier.size(24.dp),
+							modifier = Modifier.size(22.dp),
 							strokeWidth = 2.dp,
 							color = MaterialTheme.colorScheme.primary
 						)
@@ -157,7 +105,7 @@ fun CollectionDetailScreenHeadingRowButtons(
 					Icon(
 						imageVector = Icons.Outlined.Delete,
 						contentDescription = stringResource(Res.string.action_delete_download),
-						modifier = Modifier.size(24.dp),
+						modifier = Modifier.size(20.dp),
 						tint = MaterialTheme.colorScheme.primary
 					)
 				}
@@ -166,16 +114,17 @@ fun CollectionDetailScreenHeadingRowButtons(
 					Icon(
 						imageVector = Icons.Outlined.DownloadOff,
 						contentDescription = stringResource(Res.string.info_download_failed),
-						modifier = Modifier.size(24.dp),
+						modifier = Modifier.size(20.dp),
 						tint = MaterialTheme.colorScheme.error
 					)
 				}
 
 				else -> {
 					Icon(
-						imageVector = Icons.Outlined.Download,
-						contentDescription = null,
-						modifier = Modifier.size(24.dp)
+						imageVector = SvirkaIcons.Download,
+						contentDescription = "Download",
+						modifier = Modifier.size(20.dp),
+						tint = mutedColor
 					)
 				}
 			}

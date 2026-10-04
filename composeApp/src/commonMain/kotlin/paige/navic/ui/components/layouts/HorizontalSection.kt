@@ -31,6 +31,7 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import paige.navic.LocalNavStack
 import paige.navic.ui.core.UiState
+import paige.navic.ui.svirka.SvirkaText
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun <T> LazyGridScope.horizontalSection(
@@ -77,7 +78,7 @@ fun LazyGridScope.header(
 	item(span = { GridItemSpan(1) }) {
 		Text(
 			stringResource(title, formatArgs),
-			style = MaterialTheme.typography.titleMediumEmphasized,
+			style = SvirkaText.Section,
 			fontWeight = FontWeight(600),
 			modifier = Modifier
 				.heightIn(min = 32.dp)

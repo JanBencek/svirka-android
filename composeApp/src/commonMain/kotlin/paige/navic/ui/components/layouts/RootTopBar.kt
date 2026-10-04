@@ -36,6 +36,7 @@ import paige.navic.ui.components.sheets.AccountSheet
 import paige.navic.ui.core.UiState
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.settings.viewmodels.NavtabsViewModel
+import paige.navic.ui.svirka.SvirkaText
 
 @OptIn(
 	ExperimentalMaterial3Api::class,
@@ -54,10 +55,8 @@ fun RootTopBar(
 	MediumFlexibleTopAppBar(
 		title = {
 			CompositionLocalProvider(
-				LocalTextStyle provides when (LocalTextStyle.current) {
-					MaterialTheme.typography.headlineMedium -> MaterialTheme.typography.headlineSmall
-					else -> MaterialTheme.typography.titleLarge
-				}
+				// Svirka page heading: text-2xl bold tracking-tight, expanded and collapsed.
+				LocalTextStyle provides SvirkaText.Heading
 			) {
 				title()
 			}

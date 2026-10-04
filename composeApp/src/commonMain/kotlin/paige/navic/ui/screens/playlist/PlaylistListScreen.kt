@@ -1,25 +1,22 @@
 package paige.navic.ui.screens.playlist
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumFloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -31,14 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import navic.composeapp.generated.resources.Res
-import navic.composeapp.generated.resources.title_create_playlist
 import navic.composeapp.generated.resources.title_playlists
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -47,11 +41,8 @@ import paige.navic.LocalBottomBarScrollManager
 import paige.navic.LocalPlatformContext
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.models.DomainSongCollection
-import paige.navic.domain.models.settings.BottomBarCollapseMode
 import paige.navic.domain.models.settings.BottomBarVisibilityMode
 import paige.navic.domain.models.settings.ListViewMode
-import paige.navic.icons.Icons
-import paige.navic.icons.outlined.Add
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.dialogs.DeletionDialog
 import paige.navic.ui.components.dialogs.DeletionEndpoint
@@ -68,6 +59,8 @@ import paige.navic.ui.screens.playlist.components.playlistListScreenContent
 import paige.navic.ui.screens.playlist.dialogs.PlaylistCreateDialog
 import paige.navic.ui.screens.playlist.viewmodels.PlaylistListViewModel
 import paige.navic.ui.screens.share.dialogs.ShareDialog
+import paige.navic.ui.svirka.SvirkaIcons
+import paige.navic.ui.svirka.SvirkaText
 import paige.navic.util.core.isLandscape
 import paige.navic.util.ui.withoutTop
 import kotlin.time.Duration
@@ -94,21 +87,30 @@ fun PlaylistListScreen(
 	val selectedSorting by viewModel.selectedSorting.collectAsStateWithLifecycle()
 	val selectedReversed by viewModel.selectedReversed.collectAsStateWithLifecycle()
 
-	val scrollManager = LocalBottomBarScrollManager.current
-
 	var shareId by remember { mutableStateOf<String?>(null) }
 	var shareExpiry by remember { mutableStateOf<Duration?>(null) }
 	var deletionId by remember { mutableStateOf<String?>(null) }
 	val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
-	val slideSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
-	val scaleInSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
 
 	var createDialogShown by rememberSaveable { mutableStateOf(false) }
 
 	val gridState = rememberLazyGridState()
 
 	val actions: @Composable RowScope.() -> Unit = {
+		Button(
+			onClick = { createDialogShown = true },
+			shape = CircleShape,
+			modifier = Modifier.height(36.dp),
+			contentPadding = PaddingValues(horizontal = 14.dp),
+			colors = ButtonDefaults.buttonColors(
+				containerColor = MaterialTheme.colorScheme.primary,
+				contentColor = MaterialTheme.colorScheme.onPrimary
+			)
+		) {
+			Icon(SvirkaIcons.Plus, null, Modifier.size(16.dp))
+			Spacer(Modifier.width(6.dp))
+			Text("New playlist", style = SvirkaText.RowTitle)
+		}
 		PlaylistListScreenSortButton(
 			nested = nested,
 			selectedSorting = selectedSorting,
@@ -133,38 +135,6 @@ fun PlaylistListScreen(
 					title = { Text(stringResource(Res.string.title_playlists)) },
 					actions = actions
 				)
-			}
-		},
-		floatingActionButton = {
-			AnimatedContent(
-				!scrollManager.isTriggered
-					|| preferenceManager.bottomBarCollapseMode == BottomBarCollapseMode.Never,
-				transitionSpec = {
-					val transformOrigin = TransformOrigin(0f, 1f)
-					(slideInHorizontally(slideSpec) { it / 2 }
-						+ scaleIn(scaleInSpec, transformOrigin = transformOrigin)
-						+ slideInVertically(slideSpec) { it / 2 })
-						.togetherWith(slideOutHorizontally(slideSpec) { it / 2 }
-							+ scaleOut(transformOrigin = transformOrigin)
-							+ slideOutVertically(slideSpec) { it / 2 })
-						.using(SizeTransform(clip = false))
-				}
-			) { notScrolled ->
-				if (notScrolled) {
-					MediumFloatingActionButton(
-						shape = MaterialTheme.shapes.large,
-						containerColor = MaterialTheme.colorScheme.primary,
-						onClick = {
-							createDialogShown = true
-						}
-					) {
-						Icon(
-							imageVector = Icons.Outlined.Add,
-							contentDescription = stringResource(Res.string.title_create_playlist),
-							modifier = Modifier.size(26.dp)
-						)
-					}
-				}
 			}
 		},
 		bottomBar = {

@@ -7,7 +7,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,13 +17,8 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
@@ -59,7 +52,6 @@ import navic.composeapp.generated.resources.count_albums
 import navic.composeapp.generated.resources.info_bulk_download_warning
 import navic.composeapp.generated.resources.notice_deleted_download
 import navic.composeapp.generated.resources.notice_download_started
-import navic.composeapp.generated.resources.option_sort_frequent
 import navic.composeapp.generated.resources.title_albums
 import navic.composeapp.generated.resources.title_bulk_download
 import navic.composeapp.generated.resources.title_similar_artists
@@ -83,6 +75,7 @@ import paige.navic.ui.components.common.SongRow
 import paige.navic.ui.components.dialogs.BulkDownloadDialog
 import paige.navic.ui.components.layouts.ArtCarousel
 import paige.navic.ui.components.layouts.ArtCarouselItem
+import paige.navic.ui.components.layouts.ArtGridItem
 import paige.navic.ui.components.layouts.RootBottomBar
 import paige.navic.ui.components.sheets.CollectionSheet
 import paige.navic.ui.core.UiState
@@ -93,6 +86,9 @@ import paige.navic.ui.screens.artist.components.ArtistDetailScreenTopBar
 import paige.navic.ui.screens.artist.viewmodels.ArtistDetailViewModel
 import paige.navic.ui.screens.playlist.dialogs.PlaylistUpdateDialog
 import paige.navic.ui.screens.share.dialogs.ShareDialog
+import paige.navic.ui.svirka.SvirkaSectionTitle
+import paige.navic.ui.svirka.SvirkaText
+import paige.navic.ui.svirka.mutedColor
 import paige.navic.ui.theme.NavicTheme
 import paige.navic.util.core.isLandscape
 import paige.navic.util.ui.rememberColorSchemeFromCoverArt
@@ -144,8 +140,6 @@ fun ArtistDetailScreen(
 			with(density) { viewModel.scrollState.value.toDp() } >= 200.dp
 		}
 	}
-
-	val gridState = rememberLazyGridState()
 
 	var showDownloadDialog by remember { mutableStateOf(false) }
 
@@ -229,12 +223,12 @@ fun ArtistDetailScreen(
 							modifier = Modifier
 								.fillMaxSize()
 								.verticalScroll(viewModel.scrollState),
-							verticalArrangement = Arrangement.spacedBy(12.dp),
-							horizontalAlignment = Alignment.CenterHorizontally
+							verticalArrangement = Arrangement.spacedBy(24.dp)
 						) {
 							ArtistDetailScreenHeading(
 								artistName = state.artist.name,
 								coverArtId = state.artist.coverArtId,
+								albumCount = state.albums.size,
 								subtitle = state.artist.biography,
 								lastfm = state.artist.lastFmUrl,
 								innerPadding = contentPadding,
@@ -242,6 +236,9 @@ fun ArtistDetailScreen(
 							)
 							ArtistActionButtons(
 								onPlay = { viewModel.playArtistAlbums(player) },
+								onShuffle = {
+									player.playNow(state.albums.flatMap { it.songs }.shuffled())
+								},
 								onDownload = {
 									showDownloadDialog = true
 								},
@@ -257,8 +254,7 @@ fun ArtistDetailScreen(
 									snackBarManager.notify(Res.string.notice_deleted_download)
 								},
 								downloadStatus = downloadStatus,
-								playEnabled = state.albums.isNotEmpty(),
-								modifier = Modifier.padding(top = 8.dp)
+								playEnabled = state.albums.isNotEmpty()
 							)
 							Column(
 								modifier = Modifier
@@ -273,50 +269,40 @@ fun ArtistDetailScreen(
 											layoutDirection
 										)
 									),
-								verticalArrangement = Arrangement.spacedBy(12.dp),
-								horizontalAlignment = Alignment.CenterHorizontally
+								verticalArrangement = Arrangement.spacedBy(24.dp)
 							) {
 								state.topSongs.takeIf { state.topSongs.isNotEmpty() }
 									?.let { songs ->
-										Row(
-											modifier = Modifier
-												.heightIn(min = 32.dp)
-												.padding(top = 8.dp)
-												.padding(horizontal = 16.dp)
-												.fillMaxWidth(),
-											verticalAlignment = Alignment.CenterVertically,
-											horizontalArrangement = Arrangement.SpaceBetween
-										) {
-											Text(
-												stringResource(Res.string.option_sort_frequent),
-												style = MaterialTheme.typography.titleMediumEmphasized,
-												fontWeight = FontWeight(600)
-											)
-											Text(
-												stringResource(Res.string.action_see_all),
-												style = MaterialTheme.typography.labelLarge,
-												color = MaterialTheme.colorScheme.primary,
-												modifier = Modifier.clickable(onClick = dropUnlessResumed {
-													backStack.add(
-														Screen.SongList(
-															nested = true,
-															listType = DomainSongListType.ByArtist(state.artist.id)
+										Column {
+											Row(
+												modifier = Modifier
+													.fillMaxWidth()
+													.padding(horizontal = 16.dp)
+													.padding(bottom = 8.dp),
+												verticalAlignment = Alignment.CenterVertically,
+												horizontalArrangement = Arrangement.SpaceBetween
+											) {
+												SvirkaSectionTitle("Popular songs")
+												Text(
+													stringResource(Res.string.action_see_all),
+													style = SvirkaText.Body,
+													color = mutedColor,
+													modifier = Modifier.clickable(onClick = dropUnlessResumed {
+														backStack.add(
+															Screen.SongList(
+																nested = true,
+																listType = DomainSongListType.ByArtist(state.artist.id)
+															)
 														)
-													)
-												})
-											)
-										}
-										LazyHorizontalGrid(
-											rows = GridCells.Fixed(3),
-											state = gridState,
-											flingBehavior = rememberSnapFlingBehavior(lazyGridState = gridState),
-											modifier = Modifier.fillMaxWidth().height(250.dp)
-										) {
-											itemsIndexed(songs) { index, song ->
+													})
+												)
+											}
+											// ponytail: top 10 inline; "See all" opens the full list
+											songs.take(10).forEachIndexed { index, song ->
 												val download =
 													allDownloads.find { it.songId == song.id }
 												SongRow(
-													modifier = Modifier.weight(1f),
+													modifier = Modifier.fillMaxWidth(),
 													song = song,
 													selected = selection == song,
 													onClick = {
@@ -355,63 +341,81 @@ fun ArtistDetailScreen(
 											}
 										}
 									}
-								ArtCarousel(
-									stringResource(Res.string.title_albums),
-									state.albums.sortedByDescending { album -> album.playCount }
-										.toImmutableList()
-								) { album ->
-									val albumDownloadStatus by downloadManager
-										.getCollectionDownloadStatus(album.songs.map { it.id })
-										.collectAsState(initial = DownloadStatus.NOT_DOWNLOADED)
-									ArtCarouselItem(
-										coverArtId = album.coverArtId,
-										title = album.name,
-										contentDescription = null,
-										onSelect = { viewModel.selectAlbum(album) },
-										onClick = dropUnlessResumed {
-											backStack.add(
-												Screen.CollectionDetail(
-													album.id,
-													"artist"
-												)
-											)
-										}
-									)
-									if (selectedAlbum == album) {
-										CollectionSheet(
-											onDismissRequest = { viewModel.clearAlbumSelection() },
-											collection = album,
-											starred = selectedAlbumIsStarred,
-											onShare = { shareId = album.id },
-											onPlayNext = { player.playNext(album) },
-											onAddToQueue = { player.addToQueue(album) },
-											onSetStarred = { viewModel.starAlbum(!selectedAlbumIsStarred) },
-											onAddAllToPlaylist = { playlistDialogShown = true },
-											downloadStatus = albumDownloadStatus,
-											onDownloadAll = {
-												scope.launch {
-													downloadManager.downloadCollection(album)
-													snackBarManager.notify(Res.string.notice_download_started)
-												}
-											},
-											onCancelDownloadAll = {
-												scope.launch {
-													album.songs.forEach {
-														downloadManager.cancelDownload(
-															it.id
-														)
+								if (state.albums.isNotEmpty()) {
+									Column(
+										modifier = Modifier
+											.fillMaxWidth()
+											.padding(horizontal = 16.dp),
+										verticalArrangement = Arrangement.spacedBy(16.dp)
+									) {
+										SvirkaSectionTitle(stringResource(Res.string.title_albums))
+										state.albums.sortedByDescending { album -> album.playCount }
+											.chunked(2)
+											.forEach { rowAlbums ->
+												Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+													rowAlbums.forEach { album ->
+														Box(Modifier.weight(1f)) {
+															val albumDownloadStatus by downloadManager
+																.getCollectionDownloadStatus(album.songs.map { it.id })
+																.collectAsState(initial = DownloadStatus.NOT_DOWNLOADED)
+															ArtGridItem(
+																onClick = dropUnlessResumed {
+																	backStack.add(
+																		Screen.CollectionDetail(
+																			album.id,
+																			"artist"
+																		)
+																	)
+																},
+																onLongClick = { viewModel.selectAlbum(album) },
+																coverArtId = album.coverArtId,
+																title = album.name,
+																subtitle = album.year?.toString(),
+																id = album.id,
+																tab = "artist"
+															)
+															if (selectedAlbum == album) {
+																CollectionSheet(
+																	onDismissRequest = { viewModel.clearAlbumSelection() },
+																	collection = album,
+																	starred = selectedAlbumIsStarred,
+																	onShare = { shareId = album.id },
+																	onPlayNext = { player.playNext(album) },
+																	onAddToQueue = { player.addToQueue(album) },
+																	onSetStarred = { viewModel.starAlbum(!selectedAlbumIsStarred) },
+																	onAddAllToPlaylist = { playlistDialogShown = true },
+																	downloadStatus = albumDownloadStatus,
+																	onDownloadAll = {
+																		scope.launch {
+																			downloadManager.downloadCollection(album)
+																			snackBarManager.notify(Res.string.notice_download_started)
+																		}
+																	},
+																	onCancelDownloadAll = {
+																		scope.launch {
+																			album.songs.forEach {
+																				downloadManager.cancelDownload(
+																					it.id
+																				)
+																			}
+																		}
+																	},
+																	onDeleteDownloadAll = {
+																		scope.launch {
+																			downloadManager.deleteDownloadedCollection(album)
+																			snackBarManager.notify(Res.string.notice_deleted_download)
+																		}
+																	},
+																	rating = selectedAlbumRating,
+																	onSetRating = { viewModel.rateSelectedAlbum(it) }
+																)
+															}
+														}
 													}
+													// keep a lone last album at half width
+													if (rowAlbums.size == 1) Spacer(Modifier.weight(1f))
 												}
-											},
-											onDeleteDownloadAll = {
-												scope.launch {
-													downloadManager.deleteDownloadedCollection(album)
-													snackBarManager.notify(Res.string.notice_deleted_download)
-												}
-											},
-											rating = selectedAlbumRating,
-											onSetRating = { viewModel.rateSelectedAlbum(it) }
-										)
+											}
 									}
 								}
 								if (state.similarArtists.isEmpty()) return@Column

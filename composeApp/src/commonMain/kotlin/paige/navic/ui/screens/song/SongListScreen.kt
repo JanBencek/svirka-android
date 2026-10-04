@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -81,6 +82,18 @@ fun SongListScreen(
 	var songToQueue by remember { mutableStateOf<DomainSong?>(null) }
 	val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
+	// Svirka home search: filters the already-loaded list in memory.
+	var query by rememberSaveable { mutableStateOf("") }
+	val filteredSongs = remember(songsState, query) {
+		val all = songsState.data.orEmpty()
+		val q = query.trim()
+		if (q.isEmpty()) all else all.filter {
+			it.title.contains(q, ignoreCase = true)
+				|| it.artistName.contains(q, ignoreCase = true)
+				|| it.albumTitle?.contains(q, ignoreCase = true) == true
+		}
+	}
+
 	val actions: @Composable RowScope.() -> Unit = {
 		SongListScreenSortButton(
 			nested = nested,
@@ -129,10 +142,15 @@ fun SongListScreen(
 				contentPadding = innerPadding.withoutTop(),
 				verticalArrangement = if ((songsState as? UiState.Success)?.data?.isEmpty() == true)
 					Arrangement.Center
-				else Arrangement.spacedBy(12.dp)
+				else Arrangement.spacedBy(2.dp)
 			) {
 				songListScreenContent(
 					state = songsState,
+					songs = filteredSongs,
+					query = query,
+					onQueryChange = { query = it },
+					onPlayAll = { player.playNow(filteredSongs) },
+					onShuffleAll = { player.playNow(filteredSongs.shuffled()) },
 					selectedSongIsStarred = starred,
 					selectedSongRating = selectedSongRating,
 					selectedSong = selectedSong,
