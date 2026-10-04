@@ -27,7 +27,7 @@ import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.title_albums
 import navic.composeapp.generated.resources.title_artists
 import navic.composeapp.generated.resources.title_genres
-import navic.composeapp.generated.resources.title_import
+import navic.composeapp.generated.resources.title_import_tab
 import navic.composeapp.generated.resources.title_library
 import navic.composeapp.generated.resources.title_playlists
 import navic.composeapp.generated.resources.title_radios
@@ -120,7 +120,7 @@ private enum class NavItem(
 	IMPORT(
 		destination = Screen.Import(),
 		icon = Icons.Outlined.Download,
-		label = Res.string.title_import
+		label = Res.string.title_import_tab
 	)
 }
 

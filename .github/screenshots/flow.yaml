@@ -1,0 +1,68 @@
+# Maestro UI tour for screenshots. Server + password come from the workflow:
+# a throwaway Navidrome on the CI host (10.0.2.2 from the emulator).
+appId: com.bencit.svirka.debug
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 60000
+- takeScreenshot: 01-login
+- tapOn: "Server"
+- eraseText: 60
+- inputText: ${SERVER}
+- tapOn: "Username"
+- inputText: "admin"
+- tapOn: "Password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Neon Lights"
+    timeout: 120000
+- waitForAnimationToEnd
+- takeScreenshot: 02-songs
+- scroll
+- takeScreenshot: 03-songs-scrolled
+- tapOn: "Neon Lights"
+- waitForAnimationToEnd
+- takeScreenshot: 04-songs-playing
+- tapOn: "Playlists"
+- waitForAnimationToEnd
+- takeScreenshot: 05-playlists
+- tapOn: "Library"
+- waitForAnimationToEnd
+- takeScreenshot: 06-library
+- tapOn:
+    text: "Night Drive"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: 07-album
+- scroll
+- takeScreenshot: 08-album-scrolled
+- tapOn:
+    text: "Aurora Lane"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: 09-artist
+- scroll
+- takeScreenshot: 10-artist-scrolled
+- back
+- back
+- tapOn: "Import"
+- waitForAnimationToEnd
+- takeScreenshot: 11-import
+- tapOn: "Songs"
+- waitForAnimationToEnd
+# open Now Playing from the mini player
+- tapOn: "Neon Lights"
+- tapOn:
+    text: "Neon Lights"
+    index: 1
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: 12-now-playing
+- back
+- longPressOn: "Glass City"
+- waitForAnimationToEnd
+- takeScreenshot: 13-song-sheet

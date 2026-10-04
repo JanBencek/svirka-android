@@ -97,7 +97,7 @@ class PreferenceManager(
 	 * If we have informed the user (on Android) about
 	 * Google locking down sideloading.
 	 */
-	var showedSideloadingWarning by preference(false)
+	var showedSideloadingWarning by preference(true) // Svirka: own build, Navic's sideload warning n/a
 
 	// theme related settings
 	var theme by preference(Theme.Svirka)
