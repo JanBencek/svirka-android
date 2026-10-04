@@ -11,6 +11,7 @@ import paige.navic.ui.screens.artist.viewmodels.ArtistDetailViewModel
 import paige.navic.ui.screens.artist.viewmodels.ArtistListViewModel
 import paige.navic.ui.screens.collection.viewmodels.CollectionDetailViewModel
 import paige.navic.ui.screens.genre.viewmodels.GenreListViewModel
+import paige.navic.ui.screens.importLink.ImportViewModel
 import paige.navic.ui.screens.lyrics.viewmodels.LyricsScreenViewModel
 import paige.navic.ui.screens.nowPlaying.viewmodels.NowPlayingViewModel
 import paige.navic.ui.screens.playlist.viewmodels.PlaylistCreateDialogViewModel
@@ -29,6 +30,7 @@ import paige.navic.ui.screens.song.viewmodels.SongDetailViewModel
 import paige.navic.ui.screens.song.viewmodels.SongListViewModel
 
 val viewModelModule = module {
+	viewModelOf(::ImportViewModel)
 	viewModel { (artistId: String) ->
 		ArtistDetailViewModel(
 			artistId = artistId,

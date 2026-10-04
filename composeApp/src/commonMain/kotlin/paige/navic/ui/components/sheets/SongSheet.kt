@@ -177,6 +177,7 @@ fun SongSheet(
 					CoverArt(
 						coverArtId = song.coverArtId,
 						modifier = Modifier.size(50.dp),
+						thumbnail = true,
 						shape = preferenceManager.coverArtShape.decreasedShape
 					)
 				},

@@ -165,6 +165,7 @@ fun QueueScreenItem(
 					leadingContent = {
 						CoverArt(
 							modifier = Modifier.size(48.dp),
+							thumbnail = true,
 							coverArtId = song.coverArtId,
 							shape = ContinuousRoundedRectangle(10.dp)
 						)

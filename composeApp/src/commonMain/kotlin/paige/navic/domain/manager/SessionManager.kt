@@ -91,9 +91,9 @@ class SessionManager(
 		)
 	}
 
-	fun getCoverArtUrl(coverArtId: String) = api.getCoverArtUrl(
+	fun getCoverArtUrl(coverArtId: String, size: Int? = null) = api.getCoverArtUrl(
 		coverArtId,
 		auth = true,
-		size = "${preferenceManager.coverArtQuality.value}"
+		size = "${size ?: preferenceManager.coverArtQuality.value}"
 	)
 }

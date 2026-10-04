@@ -101,6 +101,7 @@ fun ArtistSheet(
 				CoverArt(
 					coverArtId = artist.coverArtId,
 					modifier = Modifier.size(50.dp),
+					thumbnail = true,
 					shape = preferenceManager.coverArtShape.decreasedShape
 				)
 			},

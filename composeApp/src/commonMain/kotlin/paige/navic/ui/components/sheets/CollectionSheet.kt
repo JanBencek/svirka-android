@@ -117,6 +117,7 @@ fun CollectionSheet(
 				CoverArt(
 					coverArtId = collection?.coverArtId,
 					modifier = Modifier.size(50.dp),
+					thumbnail = true,
 					shape = preferenceManager.coverArtShape.decreasedShape
 				)
 			},

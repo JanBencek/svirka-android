@@ -66,6 +66,7 @@ fun PlaylistListScreenListItem(
 				CoverArt(
 					coverArtId = playlist.coverArtId,
 					modifier = Modifier.size(50.dp),
+					thumbnail = true,
 					shape = preferenceManager.coverArtShape.decreasedShape
 				)
 			},

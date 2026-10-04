@@ -109,6 +109,7 @@ fun ShareListScreenItem(
 						CoverArt(
 							coverArtId = share.items.firstOrNull()?.coverArtId,
 							modifier = Modifier.size(60.dp),
+							thumbnail = true,
 							shape = preferenceManager.coverArtShape.decreasedShape
 						)
 					},

@@ -314,6 +314,13 @@
 	<string name="action_log_out">Logout</string>
 	<string name="action_log_in">Log in</string>
 	<string name="action_view_shares">Shares</string>
+	<string name="title_import">Import from link</string>
+	<string name="action_import">Import</string>
+	<string name="info_import_hint">Paste YouTube, Spotify or SoundCloud links</string>
+	<string name="info_no_imports">No imports yet</string>
+	<string name="info_import_queued">Queued</string>
+	<string name="info_import_running">Downloading…</string>
+	<string name="info_import_failed">Failed</string>
 	<string name="action_clear_search">Clear</string>
 	<string name="action_more">More</string>
 	<string name="action_add_to_playlist">Add to Playlist</string>

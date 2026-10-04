@@ -34,8 +34,10 @@ fun LazyListScope.songListScreenContent(
 ) {
 	val data = state.data.orEmpty()
 	if (data.isNotEmpty()) {
+		// O(1) lookup per row instead of scanning every download for every row.
+		val downloadsBySong = allDownloads.associateBy { it.songId }
 		items(data) { song ->
-			val download = allDownloads.find { it.songId == song.id }
+			val download = downloadsBySong[song.id]
 			SongListScreenItem(
 				modifier = Modifier.animateItem(),
 				song = song,

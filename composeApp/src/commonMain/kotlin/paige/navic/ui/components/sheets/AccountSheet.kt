@@ -35,6 +35,7 @@ import navic.composeapp.generated.resources.action_log_out
 import navic.composeapp.generated.resources.action_sleep_timer
 import navic.composeapp.generated.resources.action_sleep_timer_enabled
 import navic.composeapp.generated.resources.action_view_shares
+import navic.composeapp.generated.resources.title_import
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import paige.navic.LocalNavStack
@@ -43,6 +44,7 @@ import paige.navic.domain.manager.SleepTimerManager
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.Bedtime
 import paige.navic.icons.outlined.Logout
+import paige.navic.icons.outlined.Link
 import paige.navic.icons.outlined.Share
 import paige.navic.ui.components.common.Form
 import paige.navic.ui.components.common.FormRow
@@ -149,6 +151,23 @@ fun AccountSheet(
 						tint = MaterialTheme.colorScheme.onSurfaceVariant
 					)
 					Text(stringResource(Res.string.action_view_shares), Modifier.weight(1f))
+				}
+
+				FormRow(
+					onClick = {
+						animateToDismiss()
+						backStack.add(Screen.Import())
+					},
+					horizontalArrangement = horizontalArrangement,
+					contentPadding = contentPadding,
+					color = color
+				) {
+					Icon(
+						imageVector = Icons.Outlined.Link,
+						contentDescription = null,
+						tint = MaterialTheme.colorScheme.onSurfaceVariant
+					)
+					Text(stringResource(Res.string.title_import), Modifier.weight(1f))
 				}
 
 				FormRow(

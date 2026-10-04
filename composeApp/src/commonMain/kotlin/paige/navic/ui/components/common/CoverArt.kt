@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
@@ -56,7 +57,9 @@ fun CoverArt(
 	crossfadeMs: Int = 500,
 	shadowElevation: Dp = 0.dp,
 	interactionSource: MutableInteractionSource? = null,
-	shape: Shape? = null
+	shape: Shape? = null,
+	/** Small list/sheet artwork: fetch a 200px rendition instead of the full-quality one. */
+	thumbnail: Boolean = false
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val shape = shape ?: if (!coverArtId.orEmpty().startsWith("ar-")) {
@@ -67,14 +70,15 @@ fun CoverArt(
 	val coilPlatformContext = LocalCoilPlatformContext.current
 	val customHeaders = preferenceManager.customHeaders
 	val sessionManager = koinInject<SessionManager>()
-	val model = remember(coverArtId, customHeaders) {
+	val thumbSize = if (thumbnail) THUMBNAIL_SIZE_PX else null
+	val model = remember(coverArtId, customHeaders, thumbSize) {
 		val networkHeaders = NetworkHeaders.Builder().apply {
 			preferenceManager.customHeadersMap().forEach { (key, value) -> add(key, value) }
 		}.build()
 		ImageRequest.Builder(coilPlatformContext)
-			.data(coverArtId?.let { sessionManager.getCoverArtUrl(it) })
-			.memoryCacheKey(coverArtId)
-			.diskCacheKey(coverArtId)
+			.data(coverArtId?.let { sessionManager.getCoverArtUrl(it, thumbSize) })
+			.memoryCacheKey(thumbSize?.let { "$coverArtId@$it" } ?: coverArtId)
+			.diskCacheKey(thumbSize?.let { "$coverArtId@$it" } ?: coverArtId)
 			.diskCachePolicy(CachePolicy.ENABLED)
 			.memoryCachePolicy(CachePolicy.ENABLED)
 			.crossfade(crossfadeMs)
@@ -103,6 +107,16 @@ fun CoverArt(
 		)
 
 	if (coverArtId.isNullOrBlank()) return Box(commonModifier)
+	if (thumbnail) {
+		// Plain AsyncImage: SubcomposeAsyncImage's per-item subcomposition is costly in
+		// scrolling lists. On error the surfaceContainer background shows through.
+		return AsyncImage(
+			model = model,
+			contentDescription = contentDescription,
+			modifier = commonModifier,
+			contentScale = ContentScale.Crop
+		)
+	}
 	SubcomposeAsyncImage(
 		model = model,
 		contentDescription = contentDescription,
@@ -137,3 +151,6 @@ fun CoverArt(
 		}
 	)
 }
+
+// 50dp at ~3.5x density ≈ 175px
+private const val THUMBNAIL_SIZE_PX = 200

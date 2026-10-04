@@ -4,6 +4,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.manager.EqualiserManager
+import paige.navic.domain.manager.ImportManager
 import paige.navic.domain.manager.LoginManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.SessionManager
@@ -24,4 +25,5 @@ val managerModule = module {
 	singleOf(::SnackBarManager)
 	singleOf(::LoginManager)
 	singleOf(::EqualiserManager)
+	singleOf(::ImportManager)
 }

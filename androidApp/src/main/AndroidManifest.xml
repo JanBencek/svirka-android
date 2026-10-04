@@ -34,7 +34,14 @@
 		<activity
 			android:name=".MainActivity"
 			android:exported="true"
-			android:theme="@style/Theme.Navic" />
+			android:theme="@style/Theme.Navic">
+			<!-- Share a YouTube/Spotify/SoundCloud link → import it into the library -->
+			<intent-filter>
+				<action android:name="android.intent.action.SEND" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<data android:mimeType="text/plain" />
+			</intent-filter>
+		</activity>
 
 		<!-- app icon activities -->
 		<activity-alias

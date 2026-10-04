@@ -68,6 +68,7 @@ fun AlbumListScreenListItem(
 				CoverArt(
 					coverArtId = album.coverArtId,
 					modifier = Modifier.size(50.dp),
+					thumbnail = true,
 					shape = preferenceManager.coverArtShape.decreasedShape
 				)
 			},

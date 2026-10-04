@@ -37,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_add_to_queue
@@ -67,6 +66,7 @@ import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.common.CoverArt
 import paige.navic.ui.components.common.MarqueeText
 import paige.navic.ui.components.common.Waveform
+import paige.navic.ui.components.common.rowPlaybackState
 import paige.navic.ui.components.dialogs.QueueDuplicateDialog
 import paige.navic.ui.navigation.Screen
 import paige.navic.util.core.InlineExplicitIcon
@@ -92,10 +92,10 @@ fun CollectionDetailScreenSongRow(
 	val preferenceManager = koinInject<PreferenceManager>()
 
 	val player = koinInject<MediaPlayerViewModel>()
-	val playerState by player.uiState.collectAsStateWithLifecycle()
+	val playbackState by player.rowPlaybackState(song.id)
 
 	val isDownloaded = download?.status == DownloadStatus.DOWNLOADED
-	val isCurrentTrack = playerState.currentSong?.id == song.id
+	val isCurrentTrack = playbackState != null
 	val isExplicit = song.explicitStatus == DomainExplicitStatus.Explicit
 		&& preferenceManager.explicitContentPlayback != ExplicitContentPlayback.Allowed
 	val maybeUnavailable = isOffline && !isDownloaded
@@ -119,14 +119,14 @@ fun CollectionDetailScreenSongRow(
 		gesturesEnabled = !isExplicit,
 		onDismiss = {
 			if (it == SwipeToDismissBoxValue.StartToEnd) {
-				if (playerState.queue.any { item -> item.id == song.id }) {
+				if (player.uiState.value.queue.any { item -> item.id == song.id }) {
 					isPlayNextPending = false
 				} else {
 					onAddToQueue()
 				}
 			}
 			if (it == SwipeToDismissBoxValue.EndToStart) {
-				if (playerState.queue.any { item -> item.id == song.id }) {
+				if (player.uiState.value.queue.any { item -> item.id == song.id }) {
 					isPlayNextPending = true
 				} else {
 					onPlayNext()
@@ -179,6 +179,7 @@ fun CollectionDetailScreenSongRow(
 				if (isPlaylist)
 					CoverArt(
 						modifier = Modifier.size(48.dp),
+						thumbnail = true,
 						coverArtId = song.coverArtId,
 						shape = MaterialTheme.shapes.small
 					)
@@ -280,7 +281,7 @@ fun CollectionDetailScreenSongRow(
 					if (isCurrentTrack) {
 						Waveform(
 							modifier = Modifier.padding(end = 12.dp),
-							isPlaying = !playerState.isPaused
+							isPlaying = playbackState == false
 						)
 					}
 					song.duration.toHoursMinutesSeconds().let {

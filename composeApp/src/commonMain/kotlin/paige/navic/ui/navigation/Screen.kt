@@ -118,6 +118,10 @@ sealed interface Screen : NavKey {
 
 	@Immutable
 	@Serializable
+	data class Import(val initialText: String? = null) : Screen
+
+	@Immutable
+	@Serializable
 	data class ArtistDetail(val artist: String) : Screen
 
 	// settings

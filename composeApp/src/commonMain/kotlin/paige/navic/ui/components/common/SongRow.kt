@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.collections.immutable.persistentListOf
 import navic.composeapp.generated.resources.Res
@@ -78,7 +77,7 @@ fun SongRow(
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val player = koinInject<MediaPlayerViewModel>()
-	val playerState by player.uiState.collectAsStateWithLifecycle()
+	val playbackState by player.rowPlaybackState(song.id)
 
 	val backStack = LocalNavStack.current
 	var playlistDialogShown by rememberSaveable { mutableStateOf(false) }
@@ -86,7 +85,7 @@ fun SongRow(
 	var duplicateQueueDialogShownPlayNext by rememberSaveable { mutableStateOf(false) }
 
 	val isDownloaded = download?.status == DownloadStatus.DOWNLOADED
-	val isCurrentTrack = playerState.currentSong?.id == song.id
+	val isCurrentTrack = playbackState != null
 	val isExplicit = song.explicitStatus == DomainExplicitStatus.Explicit
 		&& preferenceManager.explicitContentPlayback != ExplicitContentPlayback.Allowed
 	val maybeUnavailable = !isOnline && !isDownloaded
@@ -125,6 +124,7 @@ fun SongRow(
 			CoverArt(
 				coverArtId = song.coverArtId,
 				modifier = Modifier.size(50.dp),
+				thumbnail = true,
 				shape = preferenceManager.coverArtShape.decreasedShape
 			)
 		},
@@ -191,7 +191,7 @@ fun SongRow(
 				if (isCurrentTrack) {
 					Waveform(
 						modifier = Modifier.padding(end = 12.dp),
-						isPlaying = !playerState.isPaused
+						isPlaying = playbackState == false
 					)
 				}
 			}

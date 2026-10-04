@@ -64,6 +64,7 @@ import org.koin.compose.koinInject
 import paige.navic.di.initializeSingletonImageLoader
 import paige.navic.domain.manager.BottomBarScrollManager
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.manager.ImportManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.manager.SnackBarManager
 import paige.navic.domain.models.settings.ExplicitContentPlayback
@@ -107,6 +108,7 @@ import paige.navic.ui.screens.settings.SettingsScreen
 import paige.navic.ui.screens.settings.SettingsStreamingQualityScreen
 import paige.navic.ui.screens.settings.SettingsThemesScreen
 import paige.navic.ui.screens.share.ShareListScreen
+import paige.navic.ui.screens.importLink.ImportScreen
 import paige.navic.ui.screens.song.SongDetailScreen
 import paige.navic.ui.screens.song.SongDetailSheet
 import paige.navic.ui.screens.song.SongListScreen
@@ -163,6 +165,16 @@ fun App() {
 		snackBarManager.events.collectLatest { event ->
 			snackBarState.showSnackbar(getString(event.resource, *event.args.toTypedArray()))
 		}
+	}
+
+	// Links shared into Navic from other apps (Android share sheet) open the import screen.
+	val importManager = koinInject<ImportManager>()
+	val pendingShare by importManager.pendingShare.collectAsStateWithLifecycle()
+	LaunchedEffect(pendingShare, isLoggedIn) {
+		val text = pendingShare ?: return@LaunchedEffect
+		if (!isLoggedIn) return@LaunchedEffect
+		importManager.pendingShare.value = null
+		backStack.add(Screen.Import(text))
 	}
 
 	val density = LocalDensity.current
@@ -361,6 +373,9 @@ private fun entryProvider(
 		}
 		entry<Screen.ShareList> {
 			ShareListScreen()
+		}
+		entry<Screen.Import> { key ->
+			ImportScreen(key.initialText)
 		}
 		entry<Screen.ArtistDetail> { key ->
 			ArtistDetailScreen(key.artist)
