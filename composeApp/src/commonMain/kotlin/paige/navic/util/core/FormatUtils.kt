@@ -18,10 +18,11 @@ fun Duration.toHoursMinutesSeconds(): String {
 
 	fun Long.twoDigits() = toString().padStart(2, '0')
 
+	// Svirka/Spotify style: leading unit unpadded — 0:20, 3:55, 1:02:03.
 	return if (hours > 0) {
-		"${hours.twoDigits()}:${minutes.twoDigits()}:${seconds.twoDigits()}"
+		"$hours:${minutes.twoDigits()}:${seconds.twoDigits()}"
 	} else {
-		"${minutes.twoDigits()}:${seconds.twoDigits()}"
+		"$minutes:${seconds.twoDigits()}"
 	}
 }
 

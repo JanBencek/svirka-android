@@ -84,7 +84,7 @@ class PreferenceManager(
 	var autoFillQueue by preference(false)
 
 	// navigation bar settings
-	var bottomBarCollapseMode by preference(BottomBarCollapseMode.OnScroll)
+	var bottomBarCollapseMode by preference(BottomBarCollapseMode.Never) // Svirka: fixed nav, like the web app
 	var bottomBarVisibilityMode by preference(BottomBarVisibilityMode.AllScreens)
 	var navigationBarStyle by preference(NavigationBarStyle.Normal)
 	var navigationBarLabelVisibility by preference(
