@@ -1,6 +1,6 @@
 name: Build
 
-# Fork: builds a debug APK on every push (no signing secrets configured).
+# master → signed release APK published as Svirka.apk; other pushes/PRs → debug compile check.
 on:
   push:
   pull_request:
@@ -36,25 +36,25 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
+      # master = what gets installed: signed, R8-optimised release build (debug
+      # builds of Compose apps scroll noticeably worse). Other branches/PRs just
+      # compile a debug build. Signing key: repo secrets (backup off-repo).
       - name: Build with Gradle (release)
-        id: build_release
-        if: github.event_name == 'push' && env.SIGNING_KEY_ALIAS
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         env:
           SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          SIGNING_STORE_FILE: ${{ github.workspace }}/release.keystore
+          SIGNING_STORE_FILE: ${{ github.workspace }}/release.p12
+          KEYSTORE_B64: ${{ secrets.KEYSTORE }}
           RELEASE: true
         run: |
-          echo "${{ secrets.KEYSTORE }}" | base64 -d > release.keystore
-          ./gradlew :androidApp:packageRelease --stacktrace
-          rm release.keystore
+          echo "$KEYSTORE_B64" | base64 -d > release.p12
+          ./gradlew :androidApp:assembleRelease --stacktrace
+          rm release.p12
 
       - name: Build with Gradle (debug)
-        id: build_debug
-        # Fork behavior: on push without signing secrets, produce a debug APK
-        # so every push yields a sideloadable artifact.
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && !env.SIGNING_KEY_ALIAS)
+        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/master') }}
         run: |
           ./gradlew :androidApp:assembleDebug --stacktrace
 
@@ -66,10 +66,10 @@ jobs:
           compression-level: 0
           if-no-files-found: ignore
 
-  publish-debug-release:
-    name: Publish Debug Release
-    # Rolling 'debug' release: force-recreated on every push to master so the
-    # stable URL always serves the newest APK (raw file, not zip).
+  publish-release:
+    name: Publish Release
+    # Rolling release: force-recreated on every push to master so the stable
+    # URL always serves the newest APK (raw file, not zip).
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [ build-android ]
     runs-on: ubuntu-latest
@@ -82,7 +82,7 @@ jobs:
           name: svirka-android
           path: apk
 
-      - name: Publish rolling 'debug' release
+      - name: Publish rolling release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -91,10 +91,11 @@ jobs:
           APK=$(find apk -name "*.apk" | head -n 1)
           [ -n "$APK" ] || { echo "::error::no APK found in artifact"; exit 1; }
           cp "$APK" Svirka.apk
-          # Delete previous release + its tag so the tag can be recreated.
-          gh release delete debug --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
-          gh release create debug Svirka.apk \
+          # Delete previous release + its tag so the tag can be recreated
+          # ('debug' = the old pre-signing debug channel).
+          for t in debug build; do gh release delete $t --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" 2>/dev/null || true; done
+          gh release create build Svirka.apk \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Svirka debug build (${GITHUB_SHA::7})" \
-            --notes "Auto-built debug APK from master@\`${GITHUB_SHA}\`. Direct install: https://github.com/JanBencek/svirka-android/releases/latest/download/Svirka.apk" \
+            --title "Svirka (${GITHUB_SHA::7})" \
+            --notes "Signed release APK from master@\`${GITHUB_SHA}\`. Direct install: https://github.com/JanBencek/svirka-android/releases/latest/download/Svirka.apk" \
             --latest

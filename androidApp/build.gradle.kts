@@ -93,7 +93,7 @@ extensions.configure<ApplicationAndroidComponentsExtension> {
 	onVariants { variant ->
 		variant.outputs.forEach { output ->
 			if (output is VariantOutputImpl) {
-				output.outputFileName = "Navic.apk"
+				output.outputFileName = "Svirka.apk"
 			}
 		}
 	}

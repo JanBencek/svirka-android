@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.sign
 import kotlin.math.roundToInt
 
 /**
@@ -104,11 +106,18 @@ fun SwipeActionRow(
 			}
 		}
 	) {
-		Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-			rightBackground()
-		}
-		Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-			leftBackground()
+		// Only compose/draw the action layer that's actually being revealed. Composing
+		// both for every row meant 3 full-width layers per row on every scroll frame.
+		// derivedStateOf: recompose when the direction flips, not on every drag pixel.
+		val direction by remember { derivedStateOf { sign(offsetX.value) } }
+		if (direction > 0f) {
+			Box(Modifier.matchParentSize(), contentAlignment = Alignment.CenterStart) {
+				rightBackground()
+			}
+		} else if (direction < 0f) {
+			Box(Modifier.matchParentSize(), contentAlignment = Alignment.CenterEnd) {
+				leftBackground()
+			}
 		}
 		Box(
 			Modifier
