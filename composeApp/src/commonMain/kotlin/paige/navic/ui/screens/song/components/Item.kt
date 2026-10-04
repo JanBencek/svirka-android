@@ -126,6 +126,7 @@ fun SongListScreenItem(
 					song = song,
 					onClickArtist = { backStack.add(Screen.ArtistDetail(it)) },
 					showYear = false,
+					showAlbum = false,
 					clickableArtist = false
 				),
 				isCurrent = playbackState != null,

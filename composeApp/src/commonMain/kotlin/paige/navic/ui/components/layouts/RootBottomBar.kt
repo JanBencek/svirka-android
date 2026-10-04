@@ -19,6 +19,11 @@ import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.models.settings.BottomBarCollapseMode
 import paige.navic.domain.models.settings.MiniPlayerStyle
 import paige.navic.util.ui.easedVerticalGradient
+import paige.navic.shared.MediaPlayerViewModel
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.remember
 
 @Composable
 fun RootBottomBar(
@@ -29,6 +34,12 @@ fun RootBottomBar(
 	bottomBarWindowInsets: WindowInsets = NavigationBarDefaults.windowInsets,
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
+	val player = koinInject<MediaPlayerViewModel>()
+	// Hide the mini player until something is loaded (an idle "Not Playing" card
+	// wastes ~90dp of a phone screen). Narrow flow: uiState ticks every 200ms.
+	val hasTrack by remember(player) {
+		player.uiState.map { it.currentSong != null }.distinctUntilChanged()
+	}.collectAsStateWithLifecycle(player.uiState.value.currentSong != null)
 	val scrolled =
 		scrolled && preferenceManager.bottomBarCollapseMode == BottomBarCollapseMode.OnScroll
 	val progress by animateFloatAsState(
@@ -51,7 +62,7 @@ fun RootBottomBar(
 			else Modifier
 		)
 	) {
-		if (!hideMiniPlayer) MiniPlayer(
+		if (!hideMiniPlayer && hasTrack) MiniPlayer(
 			modifier = Modifier.graphicsLayer {
 				alpha = progress.coerceIn(0f..1f)
 				translationY = ((1f - progress) * (size.height * 2)).coerceAtLeast(
@@ -61,9 +72,8 @@ fun RootBottomBar(
 			enabled = !scrolled
 		)
 		BottomBar(
-			containerColor = if (preferenceManager.miniPlayerStyle == MiniPlayerStyle.Detached)
-				NavigationBarDefaults.containerColor.copy(alpha = 0f)
-			else NavigationBarDefaults.containerColor,
+			// Always opaque: a transparent bar let list text scroll visibly behind the tab labels.
+			containerColor = MaterialTheme.colorScheme.surfaceContainer,
 			windowInsets = bottomBarWindowInsets,
 			modifier = Modifier.graphicsLayer {
 				alpha = progress.coerceIn(0f..1f)

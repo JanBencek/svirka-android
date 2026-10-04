@@ -79,7 +79,8 @@ fun SongRow(
 		subtitle = buildSongInfoString(
 			song = song,
 			onClickArtist = { backStack.add(Screen.ArtistDetail(it)) },
-			showYear = false
+			showYear = false,
+			showAlbum = false
 		),
 		isCurrent = isCurrentTrack,
 		onClick = onClick,

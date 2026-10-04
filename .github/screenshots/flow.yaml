@@ -17,28 +17,32 @@ appId: com.bencit.svirka.debug
 - hideKeyboard
 - tapOn: "Sign in"
 - extendedWaitUntil:
-    visible: "Neon Lights"
+    visible: "Play"
     timeout: 120000
 - waitForAnimationToEnd
 - takeScreenshot: 02-songs
 - scroll
 - takeScreenshot: 03-songs-scrolled
-- tapOn: "Neon Lights"
-- waitForAnimationToEnd
-- takeScreenshot: 04-songs-playing
 - tapOn: "Playlists"
 - waitForAnimationToEnd
-- takeScreenshot: 05-playlists
+- takeScreenshot: 04-playlists
 - tapOn: "Library"
 - waitForAnimationToEnd
-- takeScreenshot: 06-library
+- takeScreenshot: 05-library
 - tapOn:
     text: "Night Drive"
     index: 0
 - waitForAnimationToEnd
-- takeScreenshot: 07-album
+- takeScreenshot: 06-album
+- tapOn: "Neon Lights"
+- waitForAnimationToEnd
+- takeScreenshot: 07-album-playing
 - scroll
 - takeScreenshot: 08-album-scrolled
+- scrollUntilVisible:
+    element: "Aurora Lane"
+    direction: UP
+    optional: true
 - tapOn:
     text: "Aurora Lane"
     index: 0
@@ -53,15 +57,14 @@ appId: com.bencit.svirka.debug
 - takeScreenshot: 11-import
 - tapOn: "Songs"
 - waitForAnimationToEnd
-# open Now Playing from the mini player
-- tapOn: "Neon Lights"
+- takeScreenshot: 12-songs-with-player
 - tapOn:
     text: "Neon Lights"
-    index: 1
-    optional: true
+    index: 0
 - waitForAnimationToEnd
-- takeScreenshot: 12-now-playing
+- takeScreenshot: 13-now-playing
 - back
+- waitForAnimationToEnd
 - longPressOn: "Glass City"
 - waitForAnimationToEnd
-- takeScreenshot: 13-song-sheet
+- takeScreenshot: 14-song-sheet
