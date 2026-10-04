@@ -5,7 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
+import androidx.compose.ui.text.font.FontWeight
 import navic.composeapp.generated.resources.Res
+import navic.composeapp.generated.resources.geist
 import navic.composeapp.generated.resources.google_sans
 import org.jetbrains.compose.resources.Font
 import org.koin.compose.koinInject
@@ -31,6 +33,19 @@ fun googleSans(
 	return remember { FontFamily(font) }
 }
 
+/** Geist (OFL) — Svirka web's typeface. Variable font: one instance per weight used by M3 styles. */
+@Composable
+fun geist(): FontFamily {
+	val fonts = listOf(300, 400, 500, 600, 700, 800).map { w ->
+		Font(
+			Res.font.geist,
+			weight = FontWeight(w),
+			variationSettings = FontVariation.Settings(FontVariation.weight(w))
+		)
+	}
+	return remember { FontFamily(fonts) }
+}
+
 @Composable
 fun defaultFont(
 	grade: Int = 0,
@@ -39,8 +54,10 @@ fun defaultFont(
 ): FontFamily {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val googleSans = googleSans(grade, width, round)
+	val geist = geist()
 	return remember(preferenceManager.font, preferenceManager.fontPath) {
 		when (preferenceManager.font) {
+			FontOption.Geist -> geist
 			FontOption.System -> FontFamily.Default
 			FontOption.GoogleSans -> googleSans
 			FontOption.Custom -> FontFamily.Default

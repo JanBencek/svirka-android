@@ -25,6 +25,7 @@ import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.title_albums
 import navic.composeapp.generated.resources.title_artists
 import navic.composeapp.generated.resources.title_genres
+import navic.composeapp.generated.resources.title_import
 import navic.composeapp.generated.resources.title_library
 import navic.composeapp.generated.resources.title_playlists
 import navic.composeapp.generated.resources.title_radios
@@ -50,6 +51,7 @@ import paige.navic.icons.filled.Radio
 import paige.navic.icons.outlined.Album
 import paige.navic.icons.outlined.Artist
 import paige.navic.icons.outlined.Genre
+import paige.navic.icons.outlined.Download
 import paige.navic.icons.outlined.LibraryMusic
 import paige.navic.icons.outlined.Note
 import paige.navic.icons.outlined.PlaylistPlay
@@ -112,6 +114,11 @@ private enum class NavItem(
 		icon = Icons.Filled.Radio,
 		iconUnselected = Icons.Outlined.Radio,
 		label = Res.string.title_radios
+	),
+	IMPORT(
+		destination = Screen.Import(),
+		icon = Icons.Outlined.Download,
+		label = Res.string.title_import
 	)
 }
 
@@ -153,6 +160,7 @@ fun BottomBar(
 						NavbarTab.Id.GENRES -> NavItem.GENRES
 						NavbarTab.Id.SONGS -> NavItem.SONGS
 						NavbarTab.Id.RADIOS -> NavItem.RADIOS
+						NavbarTab.Id.IMPORT -> NavItem.IMPORT
 					}
 					val selected = backStack.lastOrNull() == item.destination
 
@@ -212,6 +220,7 @@ fun BottomBar(
 						NavbarTab.Id.GENRES -> NavItem.GENRES
 						NavbarTab.Id.SONGS -> NavItem.SONGS
 						NavbarTab.Id.RADIOS -> NavItem.RADIOS
+						NavbarTab.Id.IMPORT -> NavItem.IMPORT
 					}
 					val selected = backStack.last() == item.destination
 

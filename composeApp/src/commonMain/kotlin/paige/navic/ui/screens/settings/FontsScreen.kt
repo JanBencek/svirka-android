@@ -41,6 +41,7 @@ import paige.navic.domain.models.settings.FontOption
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.Check
 import paige.navic.ui.components.layouts.NestedTopBar
+import paige.navic.ui.theme.geist
 import paige.navic.ui.theme.googleSans
 
 @Composable
@@ -89,10 +90,20 @@ private fun LazyListScope.inbuiltFonts(
 	heading(Res.string.title_fonts_inbuilt)
 	item {
 		FontRow(
+			fontName = "Geist",
+			fontFamily = geist(),
+			index = 0,
+			count = 3,
+			onClick = { onSelectFont(FontOption.Geist) },
+			selected = selectedFont == FontOption.Geist
+		)
+	}
+	item {
+		FontRow(
 			fontName = "System",
 			fontFamily = FontFamily.Default,
-			index = 0,
-			count = 2,
+			index = 1,
+			count = 3,
 			onClick = { onSelectFont(FontOption.System) },
 			selected = selectedFont == FontOption.System
 		)
@@ -101,8 +112,8 @@ private fun LazyListScope.inbuiltFonts(
 		FontRow(
 			fontName = "Google Sans",
 			fontFamily = googleSans(),
-			index = 1,
-			count = 2,
+			index = 2,
+			count = 3,
 			onClick = { onSelectFont(FontOption.GoogleSans) },
 			selected = selectedFont == FontOption.GoogleSans
 		)

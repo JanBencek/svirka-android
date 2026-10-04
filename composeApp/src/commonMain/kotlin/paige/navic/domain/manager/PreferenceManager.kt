@@ -33,7 +33,7 @@ class PreferenceManager(
 	settings: KmpSettings
 ) : BasePreferenceManager(settings) {
 	var appIconVariant by preference(AppIconVariant.Default)
-	var font by preference(FontOption.GoogleSans)
+	var font by preference(FontOption.Geist)
 	var fontPath by preference("")
 	var animationStyle by preference(AnimationStyle.Expressive)
 	var nowPlayingBackgroundStyle by preference(NowPlayingBackgroundStyle.Dynamic)
@@ -76,7 +76,7 @@ class PreferenceManager(
 
 	var nowPlayingToolbarPosition by preference(ToolbarPosition.Bottom)
 	var nowPlayingSongInfo by preference(true)
-	var nowPlayingSliderStyle by preference(NowPlayingSliderStyle.Squiggly)
+	var nowPlayingSliderStyle by preference(NowPlayingSliderStyle.Flat)
 	var nowPlayingCoverArtAction by preference(CoverArtTapAction.ShowLyrics)
 	var customHeaders by preference("")
 	var checkForUpdates by preference(true)
@@ -112,7 +112,7 @@ class PreferenceManager(
 
 	// sorting/view mode preferences
 	var albumListViewMode by preference(ListViewMode.Grid)
-	var playlistListViewMode by preference(ListViewMode.List)
+	var playlistListViewMode by preference(ListViewMode.Grid)
 	var artistListViewMode by preference(ListViewMode.List)
 
 	fun customHeadersMap(): Map<String, String> = buildMap {

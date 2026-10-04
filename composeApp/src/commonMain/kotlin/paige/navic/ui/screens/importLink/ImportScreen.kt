@@ -105,7 +105,7 @@ class ImportViewModel(private val manager: ImportManager) : ViewModel() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImportScreen(initialText: String?) {
+fun ImportScreen(initialText: String?, nested: Boolean = true) {
 	val viewModel = koinViewModel<ImportViewModel>()
 	val jobs by viewModel.jobs.collectAsStateWithLifecycle()
 	val error by viewModel.error.collectAsStateWithLifecycle()

@@ -174,7 +174,7 @@ fun App() {
 		val text = pendingShare ?: return@LaunchedEffect
 		if (!isLoggedIn) return@LaunchedEffect
 		importManager.pendingShare.value = null
-		backStack.add(Screen.Import(text))
+		backStack.add(Screen.Import(text, nested = true))
 	}
 
 	val density = LocalDensity.current
@@ -374,8 +374,8 @@ private fun entryProvider(
 		entry<Screen.ShareList> {
 			ShareListScreen()
 		}
-		entry<Screen.Import> { key ->
-			ImportScreen(key.initialText)
+		entry<Screen.Import>(metadata = navtabMetadata) { key ->
+			ImportScreen(key.initialText, key.nested)
 		}
 		entry<Screen.ArtistDetail> { key ->
 			ArtistDetailScreen(key.artist)

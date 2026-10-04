@@ -156,7 +156,7 @@ fun AccountSheet(
 				FormRow(
 					onClick = {
 						animateToDismiss()
-						backStack.add(Screen.Import())
+						backStack.add(Screen.Import(nested = true))
 					},
 					horizontalArrangement = horizontalArrangement,
 					contentPadding = contentPadding,
