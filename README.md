@@ -1,51 +1,30 @@
-<div align="center">
+# Svirka for Android
 
-# Navic
+Native Android player for a [Navidrome](https://www.navidrome.org) library — the app
+companion to the [Svirka](https://music.bencit.com) web player. Same look (neutral
+dark "midnight" palette, sparkles mark), native where it counts:
 
-A modern Navidrome client for Android and iOS.
+- downloads & offline playback, background playback, Android Auto
+- **Import from link**: Account → Import from link, or share a YouTube / Spotify /
+  SoundCloud link to Svirka — it lands in the library (needs the MusicBox importer
+  at `<server>/musicbox/`)
 
-[![Add to Obtainium](https://raw.githubusercontent.com/NavicApp/Branding/refs/heads/main/assets/obtainium.svg)][ADD_TO_OBTAINIUM]
-[![AltSource provides links for most sideloading apps, like Feather](https://raw.githubusercontent.com/NavicApp/Branding/refs/heads/main/assets/altsource.svg)][ALTSOURCE]
-[![Link to the latest release where you can download the APK or IPA directly](https://raw.githubusercontent.com/NavicApp/Branding/refs/heads/main/assets/direct_download.svg)][LATEST_RELEASE]
-[![Discord](https://raw.githubusercontent.com/NavicApp/Branding/refs/heads/main/assets/discord.svg)](https://discord.gg/TBcnNX66PH)
-[![Translate](https://raw.githubusercontent.com/NavicApp/Branding/refs/heads/main/assets/translate.svg)](#translating)
-[![Codeberg](https://raw.githubusercontent.com/NavicApp/Branding/refs/heads/main/assets/codeberg.svg)](https://codeberg.org/paige/Navic)
+**Install:** https://github.com/JanBencek/svirka-android/releases/latest/download/Svirka.apk
+(rolling debug build, rebuilt on every push to `master`).
 
-</div>
+App ID `com.bencit.svirka` — installs alongside Navic.
 
-## Features
+## Building
 
-* Customisable: large selection of settings and tweaks
-* Secure & private: minimal permissions, zero telemetry, and zero analytics
-* Integrated: shows up on the lock screen + quick settings
-* Lightweight & fast: zero bloat
-* Feature rich: covers almost the entirety of the Subsonic API
-* Works offline: syncs your entire library locally, and allows you to download songs
+No local toolchain needed: GitHub Actions builds the APK on every push
+(`.github/workflows/build-apk.yml`). Locally: JDK 21 + Android SDK, then
+`./gradlew :androidApp:assembleDebug`.
 
-## Screenshots
+## Credits & license
 
-|                                       Library                                        |                                       Player                                        |                                       Lyrics                                        |                                       Albums                                        |
-|:------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------:|
-| ![](https://github.com/NavicApp/Branding/blob/main/screenshots/library.png?raw=true) | ![](https://github.com/NavicApp/Branding/blob/main/screenshots/player.png?raw=true) | ![](https://github.com/NavicApp/Branding/blob/main/screenshots/lyrics.png?raw=true) | ![](https://github.com/NavicApp/Branding/blob/main/screenshots/albums.png?raw=true) |
+Svirka for Android is a fork of [Navic](https://github.com/ssalggnikool/Navic) by
+paige and contributors (via [JanBencek/Navic](https://github.com/JanBencek/Navic)).
+Kotlin packages are kept as `paige.navic.*` so upstream fixes merge cleanly:
+`git fetch upstream && git merge upstream/master`.
 
-## Translating
-
-You can help translate Navic by contributing on [Weblate](https://hosted.weblate.org/engage/navic/).
-
-![Weblate translation status](https://hosted.weblate.org/widget/navic/navic/horizontal-auto.svg)
-
-## Star History
-
-<a href="https://star-history.com/#ssalggnikool/Navic&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ssalggnikool/Navic&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ssalggnikool/Navic&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ssalggnikool/Navic&type=Date" />
- </picture>
-</a>
-
-[ADD_TO_OBTAINIUM]: https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22paige.navic%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fssalggnikool%2FNavic%22%2C%22author%22%3A%22ssalggnikool%22%2C%22name%22%3A%22Navic%22%2C%22preferredApkIndex%22%3A0%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Atrue%2C%5C%22fallbackToOlderReleases%5C%22%3Atrue%2C%5C%22filterReleaseTitlesByRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22filterReleaseNotesByRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22verifyLatestTag%5C%22%3Afalse%2C%5C%22sortMethodChoice%5C%22%3A%5C%22date%5C%22%2C%5C%22useLatestAssetDateAsReleaseDate%5C%22%3Afalse%2C%5C%22releaseTitleAsVersion%5C%22%3Afalse%2C%5C%22trackOnly%5C%22%3Afalse%2C%5C%22versionExtractionRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22matchGroupToUse%5C%22%3A%5C%22%5C%22%2C%5C%22versionDetection%5C%22%3Atrue%2C%5C%22releaseDateAsVersion%5C%22%3Afalse%2C%5C%22useVersionCodeAsOSVersion%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5C%22%2C%5C%22invertAPKFilter%5C%22%3Afalse%2C%5C%22autoApkFilterByArch%5C%22%3Atrue%2C%5C%22appName%5C%22%3A%5C%22%5C%22%2C%5C%22appAuthor%5C%22%3A%5C%22%5C%22%2C%5C%22shizukuPretendToBeGooglePlay%5C%22%3Afalse%2C%5C%22allowInsecure%5C%22%3Afalse%2C%5C%22exemptFromBackgroundUpdates%5C%22%3Afalse%2C%5C%22skipUpdateNotifications%5C%22%3Afalse%2C%5C%22about%5C%22%3A%5C%22%5C%22%2C%5C%22refreshBeforeDownload%5C%22%3Afalse%7D%22%2C%22overrideSource%22%3Anull%7D "Add to Obtainium"
-
-[ALTSOURCE]: https://stikstore.app/altdirect/?url=https://raw.githubusercontent.com/ssalggnikool/Navic/refs/heads/master/app-repo.json
-
-[LATEST_RELEASE]: https://github.com/ssalggnikool/Navic/releases/latest
+Licensed under the GNU GPL v3.0, like Navic — see [LICENSE](LICENSE).

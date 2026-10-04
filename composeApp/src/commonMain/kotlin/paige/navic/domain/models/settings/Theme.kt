@@ -17,17 +17,25 @@ import navic.composeapp.generated.resources.theme_dynamic
 import navic.composeapp.generated.resources.theme_ios
 import navic.composeapp.generated.resources.theme_seeded
 import navic.composeapp.generated.resources.theme_spotify
+import navic.composeapp.generated.resources.theme_svirka
 import org.jetbrains.compose.resources.StringResource
 import org.koin.compose.koinInject
 import paige.navic.LocalPlatformContext
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.util.ui.darkIosColorScheme
+import paige.navic.util.ui.svirkaColorScheme
 import paige.navic.util.ui.lightIosColorScheme
 
 /**
  * Theme choices that the user can choose from
  */
 enum class Theme(val title: StringResource) {
+
+	/**
+	 * Svirka's own look: the web app's neutral near-black "midnight" palette
+	 * (shadcn neutral) — see svirkaColorScheme().
+	 */
+	Svirka(Res.string.theme_svirka),
 
 	/**
 	 * The app will be themed based on a "seed" colour.
@@ -74,6 +82,8 @@ enum class Theme(val title: StringResource) {
 			}
 		}
 		return when (this) {
+			Svirka -> remember(isDark) { svirkaColorScheme(isDark) }
+
 			Dynamic -> platformContext.colorScheme ?: remember(isDark) {
 				if (isDark)
 					darkColorScheme()
@@ -106,6 +116,7 @@ enum class Theme(val title: StringResource) {
 	}
 
 	fun isMaterialLike(): Boolean = when (this) {
+		Svirka,
 		Dynamic,
 		Seeded -> true
 

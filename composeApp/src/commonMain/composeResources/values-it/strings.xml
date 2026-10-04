@@ -32,7 +32,7 @@
     <string name="action_view_on_musicbrainz">Vedi su MusicBrainz</string>
     <string name="action_view_playlist">Vedi playlist</string>
     <string name="action_view_shares">Condivisioni</string>
-    <string name="app_name" translatable="false">Navic</string>
+    <string name="app_name" translatable="false">Svirka</string>
     <string name="info_action_is_permanent">Questa azione non può essere annullata</string>
     <string name="info_app_version">Navic %1$s</string>
     <string name="info_error">Qualcosa è andato storto.</string>

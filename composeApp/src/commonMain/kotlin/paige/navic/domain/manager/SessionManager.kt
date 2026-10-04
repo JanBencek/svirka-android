@@ -38,10 +38,10 @@ class SessionManager(
 			username = username,
 			password = password,
 		),
-		client = "Navic",
+		client = "Svirka",
 		clientConfig = {
 			install(UserAgent) {
-				agent = "Navic"
+				agent = "Svirka"
 			}
 
 			val customHeaders = preferenceManager.customHeadersMap()

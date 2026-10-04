@@ -1,4 +1,5 @@
-// Navic Android app module — fork of ssalggnikool/Navic (JanBencek).
+// Svirka Android app module — fork of JanBencek/Navic (itself a fork of ssalggnikool/Navic).
+// Kotlin packages stay paige.navic.* so upstream Navic fixes still merge cleanly.
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.impl.VariantOutputImpl
@@ -18,7 +19,7 @@ extensions.configure<ApplicationExtension> {
 	}
 
 	defaultConfig {
-		applicationId = "paige.navic"
+		applicationId = "com.bencit.svirka"
 		minSdk = libs.versions.android.minSdk.get().toInt()
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
 		versionCode = 43
@@ -65,7 +66,7 @@ extensions.configure<ApplicationExtension> {
 
 		getByName("debug") {
 			applicationIdSuffix = ".debug"
-			resValue("string", "app_name", "Navic (Dev)")
+			resValue("string", "app_name", "Svirka (Dev)")
 		}
 	}
 

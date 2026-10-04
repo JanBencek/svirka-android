@@ -23,7 +23,8 @@ class LoginManager(
 	val loginState: StateFlow<LoginUiState>
 		field = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
 
-	val instanceState = TextFieldState()
+	// Svirka: prefilled with the home server; still editable for any Navidrome.
+	val instanceState = TextFieldState("https://music.bencit.com")
 	val usernameState = TextFieldState()
 	val passwordState = TextFieldState()
 

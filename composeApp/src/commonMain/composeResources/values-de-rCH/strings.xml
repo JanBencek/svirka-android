@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">Navic</string>
+    <string name="app_name" translatable="false">Svirka</string>
     <string name="title_library">Bibliothek</string>
     <string name="title_playlists">Playlists</string>
     <string name="title_settings">Einstellungen</string>

@@ -100,8 +100,8 @@ class PreferenceManager(
 	var showedSideloadingWarning by preference(false)
 
 	// theme related settings
-	var theme by preference(Theme.Dynamic)
-	var themeMode by preference(ThemeMode.System)
+	var theme by preference(Theme.Svirka)
+	var themeMode by preference(ThemeMode.Dark)
 	var dynamicTheming by preference(false)
 	var paletteStyle by preference(PaletteStyle.TonalSpot)
 	var paletteSpec by preference(ColorSpec.SpecVersion.SPEC_2025)

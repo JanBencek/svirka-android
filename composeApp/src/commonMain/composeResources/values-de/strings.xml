@@ -28,7 +28,7 @@
     <string name="action_view_on_lastfm">Auf last.fm anzeigen</string>
     <string name="action_view_on_musicbrainz">Auf MusicBrainz anzeigen</string>
     <string name="action_view_playlist">Playlist anzeigen</string>
-    <string name="app_name" translatable="false">Navic</string>
+    <string name="app_name" translatable="false">Svirka</string>
     <string name="info_action_is_permanent">Dies kann nicht rückgängig gemacht werden!</string>
     <string name="info_app_version">Navic %1$s</string>
     <string name="info_error">Etwas ist schiefgelaufen.</string>
