@@ -29,8 +29,6 @@ appId: com.bencit.svirka.debug
 - takeScreenshot: 02-songs
 - scroll
 - takeScreenshot: 03-songs-scrolled
-- scroll:
-    direction: UP
 - tapOn: "Playlists"
 - waitForAnimationToEnd
 - takeScreenshot: 04-playlists
