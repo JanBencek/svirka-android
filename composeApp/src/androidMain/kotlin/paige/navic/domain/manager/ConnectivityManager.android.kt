@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,8 +28,12 @@ private data class NetworkStatus(
 		fun fromCaps(
 			caps: NetworkCapabilities
 		) = NetworkStatus(
+			// Not NET_CAPABILITY_VALIDATED: validation = reaching Google's connectivity
+			// check, which fails behind Pi-hole/VPN/locked-down Wi-Fi even though the
+			// music server is reachable — the app then refused to stream. Only a
+			// captive portal (Wi-Fi login page) really means "can't reach the server".
 			isOnline = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-				&& caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+				&& !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL),
 			isCellular = caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
 				|| !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
 		)
@@ -62,11 +65,9 @@ actual class ConnectivityManager(
 			}
 		}
 
-		val request = NetworkRequest.Builder()
-			.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-			.build()
-
-		connectivityManager.registerNetworkCallback(request, callback)
+		// Default network only: a per-network callback let any other network (e.g. an
+		// unvalidated mobile connection in the background) flip the status.
+		connectivityManager.registerDefaultNetworkCallback(callback)
 
 		trySend(
 			connectivityManager
