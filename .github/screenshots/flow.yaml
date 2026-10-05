@@ -46,7 +46,15 @@ appId: com.bencit.svirka.debug
 - waitForAnimationToEnd
 - takeScreenshot: 06-album
 - tapOn: "Neon Lights"
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Aurora Lane"
+    timeout: 5000
+- swipe:
+    direction: UP
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
 - takeScreenshot: 07-album-playing
 - scroll
 - takeScreenshot: 08-album-scrolled
@@ -69,13 +77,13 @@ appId: com.bencit.svirka.debug
 - tapOn: "Songs"
 - waitForAnimationToEnd
 - takeScreenshot: 12-songs-with-player
+# mini player sits just above the bottom bar (pixel_6 profile)
 - tapOn:
-    text: "Neon Lights"
-    index: 0
+    point: "40%,83%"
 - waitForAnimationToEnd
 - takeScreenshot: 13-now-playing
 - back
 - waitForAnimationToEnd
-- longPressOn: "Glass City"
+- longPressOn: "Sunčano"
 - waitForAnimationToEnd
 - takeScreenshot: 14-song-sheet

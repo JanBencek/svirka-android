@@ -46,6 +46,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.RectangleShape
@@ -149,6 +151,7 @@ fun MiniPlayer(
 			backStack.add(Screen.NowPlaying)
 		}
 	}
+	val openNowPlaying = onClick // named alias: `onClick` is shadowed inside semantics {}
 
 	val hasSong = song != null
 	val isRadio = song?.id?.startsWith("radio_") == true
@@ -201,7 +204,9 @@ fun MiniPlayer(
 								totalDrag = 0f
 							}
 						)
-					},
+					}
+					// Screen readers (and UI tests) get a stable label for opening Now Playing.
+					.semantics { onClick(label = "Open now playing") { openNowPlaying(); true } },
 				contentPadding = PaddingValues(
 					start = if (detached) 10.dp else 16.dp,
 					end = if (detached) 10.dp else 16.dp,

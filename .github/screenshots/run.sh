@@ -9,5 +9,7 @@ sleep 30
 export PATH="$PATH:$HOME/.maestro/bin"
 mkdir -p shots && cd shots   # takeScreenshot writes into the working directory
 maestro test --test-output-dir=debug -e SERVER="http://10.0.2.2:4533" -e PASSWORD="$ND_PASSWORD" ../.github/screenshots/flow.yaml || echo "::warning::flow did not finish — partial screenshots"
+adb logcat -d > logcat.txt 2>&1 || true
+grep -E "AndroidRuntime|FATAL|ExoPlayer|PlaybackException|Navic|paige" logcat.txt | tail -80 || true
 find . -name '*.png' | sort
 exit 0

@@ -61,5 +61,7 @@ jobs:
         if: always()
         with:
           name: screenshots
-          path: shots/**/*.png
+          path: |
+            shots/**/*.png
+            shots/logcat.txt
           if-no-files-found: warn
