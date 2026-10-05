@@ -9,13 +9,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import navic.composeapp.generated.resources.Res
-import navic.composeapp.generated.resources.action_star
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import paige.navic.icons.Icons
-import paige.navic.icons.filled.Star
-import paige.navic.icons.outlined.Star
+import paige.navic.ui.svirka.SvirkaIcons
 import paige.navic.shared.MediaPlayerViewModel
 
 @Composable
@@ -33,9 +28,11 @@ fun NowPlayingStarButton(
 		modifier = Modifier.size(32.dp),
 		enabled = playerState.currentSong != null
 	) {
+		// Svirka calls starring "liking" (heart) everywhere — same icon as the mini player.
 		Icon(
-			if (songIsStarred) Icons.Filled.Star else Icons.Outlined.Star,
-			contentDescription = stringResource(Res.string.action_star)
+			if (songIsStarred) SvirkaIcons.HeartFilled else SvirkaIcons.Heart,
+			contentDescription = if (songIsStarred) "Unlike" else "Like",
+			modifier = Modifier.size(18.dp)
 		)
 	}
 }
