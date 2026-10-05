@@ -36,6 +36,11 @@ appId: com.bencit.svirka.debug
 - waitForAnimationToEnd
 - takeScreenshot: 05-library
 - tapOn:
+    text: "See all"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: 05b-albums
+- tapOn:
     text: "Night Drive"
     index: 0
 - waitForAnimationToEnd
