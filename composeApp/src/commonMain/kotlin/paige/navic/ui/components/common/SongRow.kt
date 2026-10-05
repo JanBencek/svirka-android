@@ -80,7 +80,9 @@ fun SongRow(
 			song = song,
 			onClickArtist = { backStack.add(Screen.ArtistDetail(it)) },
 			showYear = false,
-			showAlbum = false
+			showAlbum = false,
+			// A tap anywhere on the row plays; artist navigation is in the long-press sheet.
+			clickableArtist = false
 		),
 		isCurrent = isCurrentTrack,
 		onClick = onClick,
