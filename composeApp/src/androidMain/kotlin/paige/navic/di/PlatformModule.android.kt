@@ -63,7 +63,7 @@ actual val platformModule = module {
 	single(createdAtStart = true) {
 		val name = Settings.Global.getString(androidApplication().contentResolver, Settings.Global.DEVICE_NAME)
 			?: Build.MODEL
-		ConnectManager(get(), get(), get(), name).apply { start() }
+		ConnectManager(get(), get(), get(), get(), name).apply { start() }
 	}
 
 	singleOf(::ShareManager)

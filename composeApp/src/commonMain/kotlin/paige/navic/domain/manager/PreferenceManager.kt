@@ -106,6 +106,10 @@ class PreferenceManager(
 	var paletteStyle by preference(PaletteStyle.TonalSpot)
 	var paletteSpec by preference(ColorSpec.SpecVersion.SPEC_2025)
 	var paletteAccentH by preference(0f)
+	/** BencIT hub colour theme for the Svirka theme's accent (ocean | indigo | forest | sunset | rose | grape), from Svirka Connect. */
+	var hubPalette by preference("ocean")
+	/** The hub "palette|mode" last applied, so a hub change overrides themeMode once, not on every reconnect. */
+	var hubThemeApplied by preference("")
 
 	// sync related settings
 	var lastFullSyncTime by preference(0L)

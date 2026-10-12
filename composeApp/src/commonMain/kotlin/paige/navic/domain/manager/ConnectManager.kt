@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.encodeUtf8
+import paige.navic.domain.models.settings.ThemeMode
 import paige.navic.domain.repositories.CollectionRepository
 import paige.navic.shared.MediaPlayerViewModel
 import kotlin.math.abs
@@ -66,6 +67,9 @@ data class ConnectDevice(
 )
 
 @Serializable
+private data class HubTheme(val palette: String = "ocean", val mode: String = "")
+
+@Serializable
 private data class ConnectCommand(val cmd: String, val value: Double? = null, val state: ConnectState? = null)
 
 @Serializable
@@ -85,6 +89,7 @@ class ConnectManager(
 	private val settings: Settings,
 	private val player: MediaPlayerViewModel,
 	private val collections: CollectionRepository,
+	private val preferences: PreferenceManager,
 	private val deviceName: String
 ) {
 	val deviceId: String = settings.getStringOrNull("connectDeviceId")
@@ -151,6 +156,7 @@ class ConnectManager(
 						when (event.event) {
 							"devices" -> devices.value = json.decodeFromString(data)
 							"command" -> handle(json.decodeFromString(data))
+							"theme" -> applyHubTheme(json.decodeFromString(data))
 						}
 					}
 				}
@@ -176,6 +182,22 @@ class ConnectManager(
 			"volume" -> c.value?.let { player.setVolume(it.toFloat()) }
 			"skipTo" -> c.value?.let { player.playAt(it.toInt()) }
 			"load" -> c.state?.let { scope.launch { load(it) } }
+		}
+	}
+
+	/**
+	 * The BencIT hub's colour theme and light/dark (picked in the hub or any BencIT app). The colours always follow;
+	 * light/dark only when the hub's choice changes, so a mode set here in Settings holds until then.
+	 */
+	private fun applyHubTheme(theme: HubTheme) {
+		preferences.hubPalette = theme.palette
+		val applied = "${theme.palette}|${theme.mode}"
+		if (preferences.hubThemeApplied == applied) return
+		preferences.hubThemeApplied = applied
+		preferences.themeMode = when (theme.mode) {
+			"light" -> ThemeMode.Light
+			"dark" -> ThemeMode.Dark
+			else -> ThemeMode.System
 		}
 	}
 

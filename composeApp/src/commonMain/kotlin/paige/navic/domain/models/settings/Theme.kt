@@ -32,8 +32,8 @@ import paige.navic.util.ui.lightIosColorScheme
 enum class Theme(val title: StringResource) {
 
 	/**
-	 * Svirka's own look: the web app's neutral near-black "midnight" palette
-	 * (shadcn neutral) — see svirkaColorScheme().
+	 * Svirka's own look: the web app's neutral surfaces with the BencIT hub's
+	 * colour theme as the accent — see svirkaColorScheme().
 	 */
 	Svirka(Res.string.theme_svirka),
 
@@ -82,7 +82,7 @@ enum class Theme(val title: StringResource) {
 			}
 		}
 		return when (this) {
-			Svirka -> remember(isDark) { svirkaColorScheme(isDark) }
+			Svirka -> remember(isDark, preferenceManager.hubPalette) { svirkaColorScheme(isDark, preferenceManager.hubPalette) }
 
 			Dynamic -> platformContext.colorScheme ?: remember(isDark) {
 				if (isDark)

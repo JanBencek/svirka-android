@@ -4,12 +4,43 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 
 /**
- * Svirka web palette (src/app/globals.css, shadcn "neutral"): dark = the default
- * "midnight" theme, light = :root. Monochrome on purpose — artwork carries the colour.
+ * The BencIT hub's colour themes (hub/ui.css in bencit-alati, Svirka web src/lib/palettes.ts):
+ * accent and accent text, light then dark. The first is the default.
  */
-fun svirkaColorScheme(isDark: Boolean): ColorScheme = if (isDark) darkColorScheme(
+private val HUB_ACCENTS = mapOf(
+	"ocean" to listOf(0xFF0369A1, 0xFF075985, 0xFF0284C7, 0xFF7DD3FC),
+	"indigo" to listOf(0xFF4F46E5, 0xFF4338CA, 0xFF5850EC, 0xFFA5B4FC),
+	"forest" to listOf(0xFF047857, 0xFF065F46, 0xFF059669, 0xFF6EE7B7),
+	"sunset" to listOf(0xFFC2410C, 0xFF9A3412, 0xFFEA580C, 0xFFFDBA74),
+	"rose" to listOf(0xFFBE123C, 0xFF9F1239, 0xFFE11D48, 0xFFFDA4AF),
+	"grape" to listOf(0xFF7E22CE, 0xFF6B21A8, 0xFF9333EA, 0xFFD8B4FE),
+)
+
+/**
+ * Svirka web palette (src/app/globals.css, shadcn "neutral" surfaces) with the BencIT hub colour theme's accent,
+ * like the web app: [palette] comes from the hub through Svirka Connect.
+ */
+fun svirkaColorScheme(isDark: Boolean, palette: String = "ocean"): ColorScheme {
+	val (lightAccent, lightText, darkAccent, darkText) = (HUB_ACCENTS[palette] ?: HUB_ACCENTS.getValue("ocean")).map { Color(it) }
+	val base = neutralScheme(isDark)
+	val accent = if (isDark) darkAccent else lightAccent
+	val soft = lerp(base.background, accent, if (isDark) .22f else .12f)
+	return base.copy(
+		primary = accent,
+		onPrimary = Color.White,
+		primaryContainer = soft,
+		onPrimaryContainer = if (isDark) darkText else lightText,
+		secondaryContainer = soft,
+		onSecondaryContainer = if (isDark) darkText else lightText,
+		surfaceTint = accent,
+		inversePrimary = if (isDark) lightAccent else darkText,
+	)
+}
+
+private fun neutralScheme(isDark: Boolean): ColorScheme = if (isDark) darkColorScheme(
 	primary = Color(0xFFE5E5E5),
 	onPrimary = Color(0xFF171717),
 	primaryContainer = Color(0xFF262626),
