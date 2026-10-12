@@ -99,6 +99,21 @@ abstract class MediaPlayerViewModel(
 
 	abstract fun syncPlayerWithState(state: PlayerUiState)
 
+	/* Svirka Connect (domain/manager/ConnectManager.kt): platforms that can, override these. */
+
+	/** Start [songs] at [index], [positionMs] in: playback handed over from another device. */
+	open fun playFrom(songs: List<DomainSong>, index: Int, positionMs: Long) = playNow(songs, index)
+
+	/** 0..1, or null where it can't be set from another device. */
+	open val volume: Float? get() = null
+
+	open fun setVolume(value: Float) {}
+
+	fun seekToSeconds(seconds: Double) {
+		val duration = uiState.value.currentSong?.duration?.inWholeMilliseconds ?: return
+		if (duration > 0) seek((seconds * 1000 / duration).toFloat().coerceIn(0f, 1f))
+	}
+
 	protected fun checkAndAutoFillQueue() {
 		if (!preferenceManager.autoFillQueue) return
 

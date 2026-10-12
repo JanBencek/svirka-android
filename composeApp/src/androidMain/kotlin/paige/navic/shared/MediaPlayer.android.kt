@@ -837,6 +837,25 @@ class AndroidMediaPlayerViewModel(
 		}
 	}
 
+	override fun playFrom(songs: List<DomainSong>, index: Int, positionMs: Long) {
+		clearQueue()
+		addToQueue(songs, notify = false)
+		viewModelScope.launch {
+			controller?.let { player ->
+				if (index in 0 until player.mediaItemCount) {
+					player.seekTo(index, positionMs)
+					player.play()
+				}
+			}
+		}
+	}
+
+	override val volume: Float? get() = controller?.volume
+
+	override fun setVolume(value: Float) {
+		controller?.volume = value.coerceIn(0f, 1f)
+	}
+
 	override fun playNextSingle(song: DomainSong) {
 		viewModelScope.launch {
 			controller?.addMediaItem(

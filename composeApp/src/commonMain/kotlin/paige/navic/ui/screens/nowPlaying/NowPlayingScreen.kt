@@ -17,6 +17,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +32,7 @@ import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_lyrics
 import navic.composeapp.generated.resources.action_navigate_back
 import navic.composeapp.generated.resources.action_queue
+import navic.composeapp.generated.resources.connect_devices
 import navic.composeapp.generated.resources.title_now_playing
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -39,6 +43,7 @@ import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.models.settings.NowPlayingBackgroundStyle
 import paige.navic.domain.models.settings.ToolbarPosition
 import paige.navic.icons.Icons
+import paige.navic.icons.outlined.Devices
 import paige.navic.icons.outlined.KeyboardArrowDown
 import paige.navic.icons.outlined.List
 import paige.navic.icons.outlined.Lyrics
@@ -46,6 +51,7 @@ import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.common.BlendBackground
 import paige.navic.ui.components.layouts.SheetScaffold
 import paige.navic.ui.components.layouts.TopBarButton
+import paige.navic.ui.components.sheets.DevicesSheet
 import paige.navic.ui.components.toolbars.SheetActionButton
 import paige.navic.ui.components.toolbars.SheetToolbar
 import paige.navic.ui.navigation.Screen
@@ -73,6 +79,9 @@ fun NowPlayingScreen() {
 	val viewModel = koinViewModel<NowPlayingViewModel> { parametersOf(player) }
 	val songIsStarred by viewModel.songIsStarred.collectAsStateWithLifecycle()
 	val songRating by viewModel.songRating.collectAsStateWithLifecycle()
+
+	var devicesOpen by remember { mutableStateOf(false) }
+	if (devicesOpen) DevicesSheet(onDismissRequest = { devicesOpen = false })
 
 	val sheetState = LocalSheetState.current
 	val closeScope = rememberCoroutineScope()
@@ -115,7 +124,12 @@ fun NowPlayingScreen() {
 					SheetActionButton(
 						icon = Icons.Outlined.List,
 						contentDescription = stringResource(Res.string.action_queue),
-						onClick = dropUnlessResumed { backStack.add(Screen.Queue) },
+						onClick = dropUnlessResumed { backStack.add(Screen.Queue) }
+					)
+					SheetActionButton(
+						icon = Icons.Outlined.Devices,
+						contentDescription = stringResource(Res.string.connect_devices),
+						onClick = { devicesOpen = true },
 						isEndRounded = true
 					)
 				}

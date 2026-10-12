@@ -2,12 +2,15 @@ package paige.navic.di
 
 import androidx.room3.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import android.os.Build
+import android.provider.Settings
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import paige.navic.data.database.CacheDatabase
 import paige.navic.data.database.DownloadDatabase
 import paige.navic.domain.manager.AppIconManager
+import paige.navic.domain.manager.ConnectManager
 import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.LogManager
 import paige.navic.domain.manager.PermissionManager
@@ -54,6 +57,13 @@ actual val platformModule = module {
 			preferenceManager = get(),
 			snackBarManager = get()
 		)
+	}
+
+	// Svirka Connect: connects at app start and stays connected while the process lives
+	single(createdAtStart = true) {
+		val name = Settings.Global.getString(androidApplication().contentResolver, Settings.Global.DEVICE_NAME)
+			?: Build.MODEL
+		ConnectManager(get(), get(), get(), name).apply { start() }
 	}
 
 	singleOf(::ShareManager)

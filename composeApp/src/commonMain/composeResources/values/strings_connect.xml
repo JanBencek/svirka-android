@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Svirka Connect (ConnectManager, DevicesSheet). Separate file so upstream strings.xml merges stay clean. -->
+<resources>
+	<string name="connect_devices">Devices</string>
+	<string name="connect_play_on">Play on</string>
+	<string name="connect_this_phone">This phone</string>
+	<string name="connect_playing">Playing: %1$s</string>
+	<string name="connect_paused">Paused: %1$s</string>
+	<string name="connect_idle">Idle</string>
+	<string name="connect_offline">Can\'t reach your other devices right now.</string>
+	<string name="connect_alone">Open Svirka in a browser and it shows up here.</string>
+</resources>
