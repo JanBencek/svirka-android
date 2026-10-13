@@ -104,7 +104,7 @@ jobs:
             echo "## What's new"
             git log --no-merges --format='%s' $RANGE \
               | grep -vE '^(chore|ci|build|test|docs|style)(\(.*\))?:' \
-              | sed -E 's/^[a-z]+(\(.*\))?: //; s/^/- /' || true
+              | sed -E 's/^[a-z]+(\(.*\))?: //; s/^/- /' | grep . || echo "- Build and maintenance changes only"
             echo
             echo "Signed release APK from master@\`${GITHUB_SHA}\`. Direct install: https://github.com/JanBencek/svirka-android/releases/latest/download/Svirka.apk"
           } > notes.md
