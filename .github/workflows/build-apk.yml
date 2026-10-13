@@ -48,6 +48,7 @@ jobs:
           SIGNING_STORE_FILE: ${{ github.workspace }}/release.p12
           KEYSTORE_B64: ${{ secrets.KEYSTORE }}
           RELEASE: true
+          SVIRKA_BUILD: ${{ github.run_number }}
         run: |
           echo "$KEYSTORE_B64" | base64 -d > release.p12
           ./gradlew :androidApp:assembleRelease --stacktrace
@@ -96,9 +97,12 @@ jobs:
           APK=$(find apk -name "*.apk" | head -n 1)
           [ -n "$APK" ] || { echo "::error::no APK found in artifact"; exit 1; }
           cp "$APK" Svirka.apk
-          # Release notes: every commit since the build the previous release was made from (still tagged `build`),
+          # Tag build-N, N = this run: the app's update check compares it with its own versionName (androidApp/build.gradle.kts).
+          TAG="build-${{ github.run_number }}"
+          # Release notes: every commit since the build the previous release was made from (its tag is still there),
           # so a cancelled run's commits aren't lost; the last 20 if there's no previous release.
-          PREV=$(git rev-list -n 1 build 2>/dev/null || true)
+          OLD=$(gh release list --repo "$GITHUB_REPOSITORY" --json tagName -q '.[].tagName' | grep -E '^(debug|build)' || true)
+          PREV=$(git rev-list -n 1 "$(echo "$OLD" | sort -V | tail -n 1)" 2>/dev/null || true)
           if [ -n "$PREV" ]; then RANGE="$PREV..$GITHUB_SHA"; else RANGE="-20 $GITHUB_SHA"; fi
           {
             echo "## What's new"
@@ -109,12 +113,11 @@ jobs:
             echo "Signed release APK from master@\`${GITHUB_SHA}\`. Direct install: https://github.com/JanBencek/svirka-android/releases/latest/download/Svirka.apk"
           } > notes.md
           cat notes.md
-          # Delete previous release + its tag so the tag can be recreated
-          # ('debug' = the old pre-signing debug channel).
-          for t in debug build; do gh release delete $t --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" 2>/dev/null || true; done
-          gh release create build Svirka.apk \
+          # Only the newest build stays released ('debug' = the old pre-signing debug channel).
+          for t in $OLD; do gh release delete "$t" --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true; done
+          gh release create "$TAG" Svirka.apk \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Svirka (${GITHUB_SHA::7})" \
+            --title "Svirka build ${{ github.run_number }} (${GITHUB_SHA::7})" \
             --target "$GITHUB_SHA" \
             --notes-file notes.md \
             --latest

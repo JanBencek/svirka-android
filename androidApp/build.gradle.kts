@@ -22,8 +22,11 @@ extensions.configure<ApplicationExtension> {
 		applicationId = "com.bencit.svirka"
 		minSdk = libs.versions.android.minSdk.get().toInt()
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
-		versionCode = 43
-		versionName = "v1.0.0-alpha43"
+		// CI release builds are numbered by the workflow run (SVIRKA_BUILD), so every build is a newer version and the
+		// in-app update check (ChangelogSheet) can compare its versionName with the release tag, both "build-N".
+		val build = System.getenv("SVIRKA_BUILD")?.toIntOrNull()
+		versionCode = if (build != null) 1000 + build else 43
+		versionName = if (build != null) "build-$build" else "v1.0.0-alpha43"
 
 		ndk {
 			abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
