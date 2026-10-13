@@ -37,6 +37,21 @@ data class ImportJob(
 @Serializable
 private data class ImportJobsResponse(val jobs: List<ImportJob>)
 
+/** One Explore hit from the importer's `/search` — import it by [url]. */
+@Serializable
+data class ExploreResult(
+	val source: String, // ytmusic | youtube | spotify | tiktok | soundcloud | link
+	val url: String,
+	val title: String? = null,
+	val artist: String? = null,
+	val album: String? = null,
+	val duration: Int? = null, // seconds
+	val thumbnail: String? = null
+)
+
+@Serializable
+private data class SearchResponse(val results: List<ExploreResult>)
+
 @Serializable
 private data class ImportRequest(val url: String)
 
@@ -77,6 +92,14 @@ class ImportManager(private val settings: Settings) {
 
 	suspend fun jobs(): List<ImportJob> =
 		client.get(endpoint("jobs")) { auth() }.check().body<ImportJobsResponse>().jobs
+
+	/** Search YouTube Music / YouTube ([source] = ytmusic | youtube); a link as [query] is previewed. */
+	suspend fun search(query: String, source: String): List<ExploreResult> =
+		client.get(endpoint("search")) {
+			auth()
+			parameter("q", query)
+			parameter("source", source)
+		}.check().body<SearchResponse>().results
 
 	suspend fun submit(url: String) {
 		client.post(endpoint("import")) {

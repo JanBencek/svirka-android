@@ -53,7 +53,6 @@ import paige.navic.icons.filled.Radio
 import paige.navic.icons.outlined.Album
 import paige.navic.icons.outlined.Artist
 import paige.navic.icons.outlined.Genre
-import paige.navic.icons.outlined.Download
 import paige.navic.icons.outlined.LibraryMusic
 import paige.navic.icons.outlined.Note
 import paige.navic.icons.outlined.PlaylistPlay
@@ -63,6 +62,7 @@ import paige.navic.ui.components.common.animatedTabIconPainter
 import paige.navic.ui.core.UiState
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.settings.viewmodels.NavtabsViewModel
+import paige.navic.ui.svirka.SvirkaIcons
 
 private enum class NavItem(
 	val destination: Screen,
@@ -119,7 +119,7 @@ private enum class NavItem(
 	),
 	IMPORT(
 		destination = Screen.Import(),
-		icon = Icons.Outlined.Download,
+		icon = SvirkaIcons.Compass,
 		label = Res.string.title_import_tab
 	)
 }

@@ -70,5 +70,12 @@ object SvirkaIcons {
 	val Music4 by lazy { lucide("Music4", "M9 18V5l12-2v13", "m9 9 12-2", circle(6f, 18f, 3f), circle(18f, 16f, 3f)) }
 	val CircleCheck by lazy { lucide("CircleCheck", circle(12f, 12f, 10f), "m9 12 2 2 4-4") }
 	val CircleX by lazy { lucide("CircleX", circle(12f, 12f, 10f), "m15 9-6 6", "m9 9 6 6") }
+	val Compass by lazy {
+		lucide(
+			"Compass",
+			circle(12f, 12f, 10f),
+			"m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"
+		)
+	}
 	val Search by lazy { lucide("Search", "m21 21-4.34-4.34", circle(11f, 11f, 8f)) }
 }

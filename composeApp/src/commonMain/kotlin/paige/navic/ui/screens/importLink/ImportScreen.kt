@@ -10,37 +10,46 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import coil3.compose.AsyncImage
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,11 +60,13 @@ import navic.composeapp.generated.resources.info_import_failed
 import navic.composeapp.generated.resources.info_import_queued
 import navic.composeapp.generated.resources.info_import_running
 import navic.composeapp.generated.resources.title_import
+import navic.composeapp.generated.resources.title_import_tab
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import paige.navic.LocalBottomBarScrollManager
 import paige.navic.LocalPlatformContext
+import paige.navic.domain.manager.ExploreResult
 import paige.navic.domain.manager.ImportJob
 import paige.navic.domain.manager.ImportManager
 import paige.navic.domain.manager.PreferenceManager
@@ -82,6 +93,15 @@ class ImportViewModel(private val manager: ImportManager) : ViewModel() {
 	val submitting: StateFlow<Boolean>
 		field = MutableStateFlow(false)
 
+	/** Explore results; null until the first search. */
+	val results: StateFlow<List<ExploreResult>?>
+		field = MutableStateFlow<List<ExploreResult>?>(null)
+
+	val searching: StateFlow<Boolean>
+		field = MutableStateFlow(false)
+
+	private var searchJob: Job? = null
+
 	init {
 		// Poll fast while something is downloading, slowly otherwise; stops with the screen.
 		viewModelScope.launch {
@@ -98,6 +118,23 @@ class ImportViewModel(private val manager: ImportManager) : ViewModel() {
 			error.value = null
 		} catch (e: Exception) {
 			error.value = e.message ?: "Couldn't reach the importer"
+		}
+	}
+
+	/** Search YouTube Music / YouTube, or preview a single link; a newer search cancels the last. */
+	fun search(query: String, source: String) {
+		searchJob?.cancel()
+		searchJob = viewModelScope.launch {
+			searching.value = true
+			try {
+				results.value = manager.search(query, source)
+				error.value = null
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				error.value = e.message ?: "Search failed"
+			}
+			searching.value = false
 		}
 	}
 
@@ -130,8 +167,25 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 	val jobs by viewModel.jobs.collectAsStateWithLifecycle()
 	val error by viewModel.error.collectAsStateWithLifecycle()
 	val submitting by viewModel.submitting.collectAsStateWithLifecycle()
-	var text by rememberSaveable { mutableStateOf(initialText.orEmpty()) }
-	val hasLinks = ImportManager.extractUrls(text).isNotEmpty()
+	val results by viewModel.results.collectAsStateWithLifecycle()
+	val searching by viewModel.searching.collectAsStateWithLifecycle()
+	var text by rememberSaveable { mutableStateOf(initialText.orEmpty().replace('\n', ' ').trim()) }
+	var source by rememberSaveable { mutableStateOf("ytmusic") }
+	val keyboard = LocalSoftwareKeyboardController.current
+
+	// Several links import straight away; one link is previewed; anything else is a search.
+	fun go() {
+		val urls = ImportManager.extractUrls(text)
+		when {
+			urls.size > 1 -> viewModel.submit(text) { ok -> if (ok) text = "" }
+			urls.size == 1 -> viewModel.search(urls.first(), source)
+			text.isNotBlank() -> viewModel.search(text.trim(), source)
+		}
+		keyboard?.hide()
+	}
+
+	// Shared from another app (share sheet): show it right away.
+	LaunchedEffect(Unit) { if (!initialText.isNullOrBlank()) go() }
 
 	val platformContext = LocalPlatformContext.current
 	val preferenceManager = koinInject<PreferenceManager>()
@@ -141,7 +195,7 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 		topBar = {
 			if (!nested) {
 				RootTopBar(
-					title = { Text(stringResource(Res.string.action_import)) },
+					title = { Text(stringResource(Res.string.title_import_tab)) },
 					scrollBehavior = scrollBehavior
 				)
 			} else {
@@ -173,48 +227,41 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 		) {
 			item {
 				Text(
-					text = "Add music to your library from a link — paste a song or playlist link.",
+					text = "Find songs on YouTube Music or YouTube — or paste a Spotify, TikTok or SoundCloud link — and import them into your library.",
 					style = SvirkaText.Body,
 					color = mutedColor
 				)
 			}
 			item {
 				Column(Modifier.padding(top = 16.dp)) {
-					Text("Paste music links", style = SvirkaText.RowTitle)
-					Spacer(Modifier.height(8.dp))
 					OutlinedTextField(
 						value = text,
 						onValueChange = { text = it },
 						modifier = Modifier.fillMaxWidth(),
-						placeholder = { Text("One song or playlist link per line…", style = SvirkaText.Body) },
+						placeholder = { Text("Search songs or paste a link…", style = SvirkaText.Body) },
+						leadingIcon = { Icon(SvirkaIcons.Search, null, Modifier.size(18.dp)) },
+						trailingIcon = if (searching || submitting) {
+							{ CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) }
+						} else null,
+						singleLine = true,
+						keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+						keyboardActions = KeyboardActions(onSearch = { go() }),
 						textStyle = SvirkaText.Body,
-						shape = SvirkaShapes.Lg,
-						minLines = 5,
-						maxLines = 8
+						shape = SvirkaShapes.Lg
 					)
-					Spacer(Modifier.height(12.dp))
-					Button(
-						onClick = { viewModel.submit(text) { ok -> if (ok) text = "" } },
-						enabled = hasLinks && !submitting,
-						shape = CircleShape,
-						colors = ButtonDefaults.buttonColors(
-							containerColor = MaterialTheme.colorScheme.primary,
-							contentColor = MaterialTheme.colorScheme.onPrimary
-						),
-						modifier = Modifier
-							.fillMaxWidth()
-							.height(40.dp)
+					Row(
+						modifier = Modifier.padding(top = 8.dp),
+						horizontalArrangement = Arrangement.spacedBy(8.dp)
 					) {
-						if (submitting) {
-							CircularProgressIndicator(
-								Modifier.size(18.dp),
-								color = MaterialTheme.colorScheme.onPrimary,
-								strokeWidth = 2.dp
+						EXPLORE_SOURCES.forEach { (id, label) ->
+							FilterChip(
+								selected = source == id,
+								onClick = {
+									source = id
+									if (text.isNotBlank() && ImportManager.extractUrls(text).isEmpty()) go()
+								},
+								label = { Text(label, maxLines = 1) }
 							)
-						} else {
-							Icon(SvirkaIcons.Download, null, Modifier.size(16.dp))
-							Spacer(Modifier.width(8.dp))
-							Text(stringResource(Res.string.action_import), style = SvirkaText.RowTitle)
 						}
 					}
 				}
@@ -225,6 +272,32 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 						text = message,
 						color = MaterialTheme.colorScheme.error,
 						style = SvirkaText.Body
+					)
+				}
+			}
+			results?.let { found ->
+				item {
+					SvirkaSectionTitle(
+						text = "Results",
+						icon = SvirkaIcons.Search,
+						modifier = Modifier.padding(top = 8.dp)
+					)
+				}
+				if (found.isEmpty()) {
+					item {
+						SvirkaEmptyState(
+							title = "No results",
+							hint = "Try different words, or paste a link.",
+							icon = SvirkaIcons.Search
+						)
+					}
+				}
+				items(found, key = { "result:" + it.url }) { result ->
+					ExploreResultRow(
+						result = result,
+						// jobs are newest first, so this is the latest attempt at this link
+						status = jobs.firstOrNull { it.url == result.url }?.status,
+						onImport = { viewModel.submit(result.url) {} }
 					)
 				}
 			}
@@ -240,10 +313,75 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 				item {
 					SvirkaEmptyState(
 						title = "No imports yet",
-						hint = "Paste a song or playlist link above to add it to your library.",
+						hint = "Search above, or paste a song or playlist link, to add it to your library.",
 						icon = SvirkaIcons.Download
 					)
 				}
+			}
+		}
+	}
+}
+
+private val EXPLORE_SOURCES = listOf("ytmusic" to "YouTube Music", "youtube" to "YouTube")
+
+private val SOURCE_LABELS = mapOf(
+	"ytmusic" to "YouTube Music",
+	"youtube" to "YouTube",
+	"spotify" to "Spotify",
+	"tiktok" to "TikTok",
+	"soundcloud" to "SoundCloud",
+	"link" to "Link"
+)
+
+@Composable
+private fun ExploreResultRow(result: ExploreResult, status: String?, onImport: () -> Unit) {
+	val busy = status == "queued" || status == "running"
+	Row(
+		modifier = Modifier.fillMaxWidth(),
+		verticalAlignment = Alignment.CenterVertically,
+		horizontalArrangement = Arrangement.spacedBy(12.dp)
+	) {
+		AsyncImage(
+			model = result.thumbnail,
+			contentDescription = null,
+			contentScale = ContentScale.Crop,
+			modifier = Modifier
+				.size(48.dp)
+				.clip(SvirkaShapes.Sm)
+				.background(MaterialTheme.colorScheme.surfaceContainer)
+		)
+		Column(Modifier.weight(1f)) {
+			Text(
+				text = result.title ?: result.url,
+				style = SvirkaText.RowTitle,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis
+			)
+			Text(
+				text = listOfNotNull(
+					SOURCE_LABELS[result.source] ?: result.source,
+					result.artist,
+					result.album,
+					result.duration?.let { "${it / 60}:${(it % 60).toString().padStart(2, '0')}" }
+				).joinToString(" · "),
+				style = SvirkaText.Small,
+				color = mutedColor,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis
+			)
+		}
+		IconButton(onClick = onImport, enabled = !busy && status != "done") {
+			when {
+				busy -> CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+				status == "done" -> Icon(
+					SvirkaIcons.CircleCheck, "Imported", Modifier.size(20.dp),
+					tint = MaterialTheme.colorScheme.primary
+				)
+				status == "error" -> Icon(
+					SvirkaIcons.CircleX, "Retry import", Modifier.size(20.dp),
+					tint = MaterialTheme.colorScheme.error
+				)
+				else -> Icon(SvirkaIcons.Download, stringResource(Res.string.action_import), Modifier.size(20.dp))
 			}
 		}
 	}
