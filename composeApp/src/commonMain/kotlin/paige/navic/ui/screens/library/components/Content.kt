@@ -77,6 +77,7 @@ fun LibraryScreenContent(
 	onSelectPlaylist: (DomainPlaylist) -> Unit,
 	onClearPlaylistSelection: () -> Unit,
 	onDeletePlaylist: (String) -> Unit,
+	onShufflePlaylist: () -> Unit,
 	onPlayPlaylistNext: () -> Unit,
 	onAddPlaylistToQueue: () -> Unit,
 
@@ -155,6 +156,7 @@ fun LibraryScreenContent(
 				onDeselect = { onClearPlaylistSelection() },
 				onSetDeletionId = { onDeletePlaylist(it) },
 				onSetShareId = { onSetShareId(it) },
+				onShufflePlay = onShufflePlaylist,
 				onPlayNext = onPlayPlaylistNext,
 				onAddToQueue = onAddPlaylistToQueue
 			)

@@ -164,6 +164,9 @@ fun LibraryScreen() {
 				onSelectPlaylist = { playlistsViewModel.selectPlaylist(it) },
 				onClearPlaylistSelection = { playlistsViewModel.clearSelection() },
 				onDeletePlaylist = { playlistDeletionId = it },
+				onShufflePlaylist = {
+					if (selectedPlaylist != null) player.shufflePlay(selectedPlaylist as DomainSongCollection)
+				},
 				onPlayPlaylistNext = {
 					if (selectedPlaylist != null) player.playNext(
 						selectedPlaylist as DomainSongCollection
