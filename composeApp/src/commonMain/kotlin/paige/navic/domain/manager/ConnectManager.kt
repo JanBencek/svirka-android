@@ -172,14 +172,15 @@ class ConnectManager(
 
 	/* ---- Friends ---- */
 
-	suspend fun friends(): Friends {
+	/** [query]: search for people to follow; without one (2+ letters) the server lists nobody in [Friends.others]. */
+	suspend fun friends(query: String = ""): Friends {
 		awaitAuth()
-		return client.get("$base/api/connect/friends?$auth").body()
+		return client.get("$base/api/connect/friends?$auth&q=${query.encodeURLParameter()}").body()
 	}
 
-	suspend fun follow(user: String, on: Boolean): Friends {
+	suspend fun follow(user: String, on: Boolean, query: String = ""): Friends {
 		awaitAuth()
-		return client.post("$base/api/connect/friends?$auth") {
+		return client.post("$base/api/connect/friends?$auth&q=${query.encodeURLParameter()}") {
 			contentType(ContentType.Application.Json)
 			setBody(FollowBody(user, on))
 		}.body()

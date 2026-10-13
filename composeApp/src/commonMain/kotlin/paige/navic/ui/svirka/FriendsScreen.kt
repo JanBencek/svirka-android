@@ -21,8 +21,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -76,6 +78,7 @@ fun FriendsScreen(nested: Boolean = false) {
 	val jam by connect.jam.collectAsStateWithLifecycle()
 	var data by remember { mutableStateOf<Friends?>(null) }
 	var error by remember { mutableStateOf<String?>(null) }
+	var query by remember { mutableStateOf("") }
 	val scope = rememberCoroutineScope()
 	val lifecycle = LocalLifecycleOwner.current.lifecycle
 
@@ -91,14 +94,15 @@ fun FriendsScreen(nested: Boolean = false) {
 	}
 
 	fun follow(user: String, on: Boolean) {
-		scope.launch { update { connect.follow(user, on) } }
+		scope.launch { update { connect.follow(user, on, query.trim()) } }
 	}
 
-	// Refresh every 15 s while the screen is visible.
-	LaunchedEffect(lifecycle) {
+	// Refresh every 15 s while the screen is visible, and when the search changes (once typing pauses).
+	LaunchedEffect(lifecycle, query) {
+		if (query.isNotEmpty()) delay(250)
 		lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
 			while (true) {
-				update { connect.friends() }
+				update { connect.friends(query.trim()) }
 				delay(15.seconds)
 			}
 		}
@@ -162,7 +166,7 @@ fun FriendsScreen(nested: Boolean = false) {
 				item {
 					SvirkaEmptyState(
 						title = "No friends yet",
-						hint = "Follow someone below to see what they listen to.",
+						hint = "Search for someone below and follow them to see what they listen to.",
 						icon = SvirkaIcons.Users
 					)
 				}
@@ -175,11 +179,31 @@ fun FriendsScreen(nested: Boolean = false) {
 					onUnfollow = { follow(friend.user, false) }
 				)
 			}
+			item {
+				SvirkaSectionTitle("Add friend", Modifier.padding(top = 16.dp), SvirkaIcons.Plus)
+			}
+			item {
+				OutlinedTextField(
+					value = query,
+					onValueChange = { query = it },
+					modifier = Modifier.fillMaxWidth(),
+					singleLine = true,
+					shape = SvirkaShapes.Lg,
+					textStyle = SvirkaText.Body,
+					placeholder = { Text("Search by username", style = SvirkaText.Body, color = mutedColor) },
+					leadingIcon = { Icon(SvirkaIcons.Search, null, Modifier.size(16.dp), tint = mutedColor) },
+					trailingIcon = if (query.isNotEmpty()) {
+						{
+							IconButton(onClick = { query = "" }) {
+								Icon(SvirkaIcons.CircleX, "Clear search", Modifier.size(16.dp), tint = mutedColor)
+							}
+						}
+					} else null
+				)
+			}
 			val others = data?.others.orEmpty()
-			if (others.isNotEmpty()) {
-				item {
-					SvirkaSectionTitle("Add friend", Modifier.padding(top = 16.dp), SvirkaIcons.Plus)
-				}
+			if (query.trim().length >= 2 && data != null && others.isEmpty()) {
+				item { Text("Nobody found.", style = SvirkaText.Body, color = mutedColor) }
 			}
 			items(others, key = { "other:$it" }) { user ->
 				Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
