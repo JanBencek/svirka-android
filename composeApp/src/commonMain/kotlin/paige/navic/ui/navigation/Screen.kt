@@ -122,6 +122,10 @@ sealed interface Screen : NavKey {
 
 	@Immutable
 	@Serializable
+	data class Friends(val nested: Boolean = false) : Screen
+
+	@Immutable
+	@Serializable
 	data class ArtistDetail(val artist: String) : Screen
 
 	// settings

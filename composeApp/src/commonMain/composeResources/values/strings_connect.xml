@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Svirka Connect (ConnectManager, DevicesSheet). Separate file so upstream strings.xml merges stay clean. -->
+<!-- Svirka Connect, Friends and Jam (ConnectManager, DevicesSheet, FriendsScreen). Separate file so upstream strings.xml merges stay clean. -->
 <resources>
 	<string name="connect_devices">Devices</string>
 	<string name="connect_play_on">Play on</string>
@@ -9,4 +9,8 @@
 	<string name="connect_idle">Idle</string>
 	<string name="connect_offline">Can\'t reach your other devices right now.</string>
 	<string name="connect_alone">Open Svirka in a browser and it shows up here.</string>
+	<string name="title_friends">Friends</string>
+	<string name="jam_added">Added to the Jam</string>
+	<string name="jam_enqueued">%1$s added %2$s</string>
+	<string name="jam_error">%1$s</string>
 </resources>

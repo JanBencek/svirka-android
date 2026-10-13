@@ -725,6 +725,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun addToQueueSingle(song: DomainSong, notify: Boolean) {
+		if (addToJam(listOf(song))) return
 		viewModelScope.launch {
 			controller?.addMediaItem(song.toMediaItem())
 			_uiState.update { state ->
@@ -752,6 +753,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun addToQueue(songs: List<DomainSong>, notify: Boolean) {
+		if (addToJam(songs)) return
 		viewModelScope.launch {
 			val items = songs.map { it.toMediaItem() }
 			controller?.addMediaItems(items)
@@ -813,6 +815,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun clearQueue() {
+		if (jam != null) return
 		viewModelScope.launch {
 			_uiState.update {
 				it.copy(
@@ -827,6 +830,14 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun playAt(index: Int) {
+		if (jam != null) {
+			// in a Jam: swiping the artwork to the neighbouring song skips there on the host's side
+			when (index - _uiState.value.currentIndex) {
+				1 -> toJam("next")
+				-1 -> toJam("prev")
+			}
+			return
+		}
 		viewModelScope.launch {
 			controller?.let { player ->
 				if (index in 0 until player.mediaItemCount) {
@@ -850,6 +861,17 @@ class AndroidMediaPlayerViewModel(
 		}
 	}
 
+	override fun replaceQueue(songs: List<DomainSong>, index: Int) {
+		val player = controller ?: return
+		val current = player.currentMediaItemIndex
+		if (current == C.INDEX_UNSET || index !in songs.indices) return
+		player.removeMediaItems(current + 1, player.mediaItemCount)
+		player.removeMediaItems(0, current)
+		player.addMediaItems(songs.drop(index + 1).map { it.toMediaItem() })
+		player.addMediaItems(0, songs.take(index).map { it.toMediaItem() })
+		_uiState.update { it.copy(queue = songs, currentIndex = index, currentSong = songs[index]) }
+	}
+
 	override val volume: Float? get() = controller?.volume
 
 	override fun setVolume(value: Float) {
@@ -857,6 +879,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun playNextSingle(song: DomainSong) {
+		if (addToJam(listOf(song))) return
 		viewModelScope.launch {
 			controller?.addMediaItem(
 				_uiState.value.currentIndex + 1,
@@ -879,6 +902,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun playNext(collection: DomainSongCollection) {
+		if (addToJam(collection.songs)) return
 		viewModelScope.launch {
 			val (items, newCollection) = withContext(Dispatchers.Default) {
 				val newCollection =
@@ -909,6 +933,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun playRadio(radio: DomainRadio) {
+		if (jam != null) return
 		viewModelScope.launch {
 			val radioId = "radio_${radio.name.hashCode()}"
 
@@ -985,6 +1010,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun shufflePlay(collection: DomainSongCollection) {
+		if (addToJam(collection.songs.shuffled())) return
 		viewModelScope.launch {
 			val (shuffledSongs, mediaItems) = withContext(Dispatchers.Default) {
 				val songs = collection.songs.shuffled()
@@ -1009,24 +1035,28 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun pause() {
+		if (toJam("pause")) return
 		viewModelScope.launch(Dispatchers.Main.immediate) {
 			controller?.pause()
 		}
 	}
 
 	override fun resume() {
+		if (toJam("play")) return
 		viewModelScope.launch(Dispatchers.Main.immediate) {
 			controller?.play()
 		}
 	}
 
 	override fun next() {
+		if (toJam("next")) return
 		viewModelScope.launch(Dispatchers.Main.immediate) {
 			if (controller?.hasNextMediaItem() == true) controller?.seekToNextMediaItem()
 		}
 	}
 
 	override fun previous() {
+		if (toJam("prev")) return
 		viewModelScope.launch(Dispatchers.Main.immediate) {
 			val controller = controller ?: return@launch
 			if (controller.hasPreviousMediaItem() && controller.currentPosition <= 1000) {
@@ -1058,6 +1088,8 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun seek(normalized: Float) {
+		val duration = _uiState.value.currentSong?.duration?.inWholeMilliseconds ?: 0L
+		if (toJam("seek", normalized * duration / 1000.0)) return
 		viewModelScope.launch(Dispatchers.Main.immediate) {
 			controller?.let {
 				val target = (it.duration * normalized).toLong()

@@ -17,6 +17,7 @@ data class NavbarTab(
 		GENRES,
 		SONGS,
 		RADIOS,
-		IMPORT
+		IMPORT,
+		FRIENDS
 	}
 }

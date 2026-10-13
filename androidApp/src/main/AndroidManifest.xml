@@ -41,6 +41,14 @@
 				<category android:name="android.intent.category.DEFAULT" />
 				<data android:mimeType="text/plain" />
 			</intent-filter>
+			<!-- A shared Svirka Jam link → join it. Not a verified app link: Android opens it here once
+				 "Open supported links" is on in the app's settings (or asks / opens the browser). -->
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<category android:name="android.intent.category.BROWSABLE" />
+				<data android:scheme="https" android:host="music.bencit.com" android:pathPrefix="/jam/" />
+			</intent-filter>
 		</activity>
 
 		<!-- app icon activities -->

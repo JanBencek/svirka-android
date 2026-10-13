@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import paige.navic.domain.manager.ConnectManager
 import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.DownloadManager
 import paige.navic.domain.manager.PreferenceManager
@@ -69,6 +70,7 @@ abstract class MediaPlayerViewModel(
 	abstract fun setPlaybackSpeed(value: Float)
 
 	fun playNow(song: DomainSong) {
+		if (addToJam(listOf(song))) return
 		clearQueue()
 		addToQueueSingle(song, notify = false)
 		playAt(0)
@@ -76,6 +78,7 @@ abstract class MediaPlayerViewModel(
 	}
 
 	fun playNow(collection: DomainSongCollection, startIndex: Int = 0) {
+		if (addToJam(listOfNotNull(collection.songs.getOrNull(startIndex)))) return
 		clearQueue()
 		addToQueue(collection, notify = false)
 		playAt(startIndex)
@@ -83,6 +86,7 @@ abstract class MediaPlayerViewModel(
 	}
 
 	fun playNow(songs: List<DomainSong>, startIndex: Int = 0) {
+		if (addToJam(listOfNotNull(songs.getOrNull(startIndex)))) return
 		clearQueue()
 		addToQueue(songs, notify = false)
 		playAt(startIndex)
@@ -108,6 +112,29 @@ abstract class MediaPlayerViewModel(
 	open val volume: Float? get() = null
 
 	open fun setVolume(value: Float) {}
+
+	/** Swap the queue around the song playing now (at [index] in [songs]) without restarting it. */
+	open fun replaceQueue(songs: List<DomainSong>, index: Int) {}
+
+	/**
+	 * Svirka Jam: set while this phone plays along with someone's Jam. Then the user's play/pause/skip/seek go to
+	 * the host and what they play or queue is added to the host's queue, instead of acting on this player.
+	 */
+	var jam: ConnectManager? = null
+
+	/** True when [cmd] went to the Jam instead of this player. */
+	protected fun toJam(cmd: String, value: Double? = null): Boolean {
+		val jam = jam ?: return false
+		jam.jamControl(cmd, value)
+		return true
+	}
+
+	/** True when [songs] went to the Jam host's queue instead of this player. */
+	protected fun addToJam(songs: List<DomainSong>): Boolean {
+		val jam = jam ?: return false
+		jam.jamAdd(songs)
+		return true
+	}
 
 	fun seekToSeconds(seconds: Double) {
 		val duration = uiState.value.currentSong?.duration?.inWholeMilliseconds ?: return

@@ -109,6 +109,7 @@ import paige.navic.ui.screens.settings.SettingsStreamingQualityScreen
 import paige.navic.ui.screens.settings.SettingsThemesScreen
 import paige.navic.ui.screens.share.ShareListScreen
 import paige.navic.ui.screens.importLink.ImportScreen
+import paige.navic.ui.svirka.FriendsScreen
 import paige.navic.ui.screens.song.SongDetailScreen
 import paige.navic.ui.screens.song.SongDetailSheet
 import paige.navic.ui.screens.song.SongListScreen
@@ -376,6 +377,9 @@ private fun entryProvider(
 		}
 		entry<Screen.Import>(metadata = navtabMetadata) { key ->
 			ImportScreen(key.initialText, key.nested)
+		}
+		entry<Screen.Friends>(metadata = navtabMetadata) { key ->
+			FriendsScreen(key.nested)
 		}
 		entry<Screen.ArtistDetail> { key ->
 			ArtistDetailScreen(key.artist)

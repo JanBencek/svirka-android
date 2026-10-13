@@ -28,6 +28,7 @@ import navic.composeapp.generated.resources.title_albums
 import navic.composeapp.generated.resources.title_artists
 import navic.composeapp.generated.resources.title_genres
 import navic.composeapp.generated.resources.title_import_tab
+import navic.composeapp.generated.resources.title_friends
 import navic.composeapp.generated.resources.title_library
 import navic.composeapp.generated.resources.title_playlists
 import navic.composeapp.generated.resources.title_radios
@@ -121,6 +122,11 @@ private enum class NavItem(
 		destination = Screen.Import(),
 		icon = SvirkaIcons.Compass,
 		label = Res.string.title_import_tab
+	),
+	FRIENDS(
+		destination = Screen.Friends(),
+		icon = SvirkaIcons.Users,
+		label = Res.string.title_friends
 	)
 }
 
@@ -168,6 +174,7 @@ fun BottomBar(
 						NavbarTab.Id.SONGS -> NavItem.SONGS
 						NavbarTab.Id.RADIOS -> NavItem.RADIOS
 						NavbarTab.Id.IMPORT -> NavItem.IMPORT
+						NavbarTab.Id.FRIENDS -> NavItem.FRIENDS
 					}
 					val selected = backStack.lastOrNull() == item.destination
 
@@ -235,6 +242,7 @@ fun BottomBar(
 						NavbarTab.Id.SONGS -> NavItem.SONGS
 						NavbarTab.Id.RADIOS -> NavItem.RADIOS
 						NavbarTab.Id.IMPORT -> NavItem.IMPORT
+						NavbarTab.Id.FRIENDS -> NavItem.FRIENDS
 					}
 					val selected = backStack.last() == item.destination
 
