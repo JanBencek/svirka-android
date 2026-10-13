@@ -41,9 +41,9 @@
 				<category android:name="android.intent.category.DEFAULT" />
 				<data android:mimeType="text/plain" />
 			</intent-filter>
-			<!-- A shared Svirka Jam link → join it. Not a verified app link: Android opens it here once
-				 "Open supported links" is on in the app's settings (or asks / opens the browser). -->
-			<intent-filter>
+			<!-- A shared Svirka Jam link → join it. A verified app link: music.bencit.com/.well-known/assetlinks.json
+				 (BencITAlati Caddyfile) names this app's release signing key, so Android opens these here straight away. -->
+			<intent-filter android:autoVerify="true">
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
