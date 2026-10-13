@@ -40,7 +40,7 @@ private data class ImportJobsResponse(val jobs: List<ImportJob>)
 /** One Explore hit from the importer's `/search` — import it by [url]. */
 @Serializable
 data class ExploreResult(
-	val source: String, // ytmusic | youtube | spotify | tiktok | soundcloud | link
+	val source: String, // ytmusic | youtube | audiomack | spotify | tiktok | soundcloud | link
 	val url: String,
 	val title: String? = null,
 	val artist: String? = null,
@@ -54,6 +54,9 @@ private data class SearchResponse(val results: List<ExploreResult>)
 
 @Serializable
 private data class ImportRequest(val url: String)
+
+@Serializable
+private data class ErrorResponse(val error: String)
 
 /**
  * Link import ("paste a YouTube/Spotify/SoundCloud link → it lands in the library").
@@ -93,13 +96,25 @@ class ImportManager(private val settings: Settings) {
 	suspend fun jobs(): List<ImportJob> =
 		client.get(endpoint("jobs")) { auth() }.check().body<ImportJobsResponse>().jobs
 
-	/** Search YouTube Music / YouTube ([source] = ytmusic | youtube); a link as [query] is previewed. */
-	suspend fun search(query: String, source: String): List<ExploreResult> =
+	/** Search YouTube Music and YouTube together (deduplicated server-side); a link as [query] is previewed. */
+	suspend fun search(query: String): List<ExploreResult> =
 		client.get(endpoint("search")) {
 			auth()
 			parameter("q", query)
-			parameter("source", source)
 		}.check().body<SearchResponse>().results
+
+	/** Save an audio file straight into the library; throws with the server's reason (duplicate, not audio, …). */
+	suspend fun upload(name: String, bytes: ByteArray) {
+		val res = client.post(endpoint("upload")) {
+			auth()
+			parameter("name", name)
+			contentType(ContentType.Application.OctetStream)
+			setBody(bytes)
+		}
+		if (res.status.value in listOf(400, 409, 411, 413))
+			throw IllegalStateException(runCatching { res.body<ErrorResponse>().error }.getOrNull() ?: "Upload failed")
+		res.check()
+	}
 
 	suspend fun submit(url: String) {
 		client.post(endpoint("import")) {

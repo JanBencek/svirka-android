@@ -15,15 +15,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,11 +50,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_import
 import navic.composeapp.generated.resources.info_import_failed
@@ -71,6 +75,8 @@ import paige.navic.domain.manager.ImportJob
 import paige.navic.domain.manager.ImportManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.models.settings.BottomBarVisibilityMode
+import paige.navic.ui.components.common.PickedFile
+import paige.navic.ui.components.common.rememberAudioFilePicker
 import paige.navic.ui.components.layouts.NestedTopBar
 import paige.navic.ui.components.layouts.RootBottomBar
 import paige.navic.ui.components.layouts.RootTopBar
@@ -81,6 +87,9 @@ import paige.navic.ui.svirka.SvirkaShapes
 import paige.navic.ui.svirka.SvirkaText
 import paige.navic.ui.svirka.mutedColor
 import paige.navic.util.core.isLandscape
+
+/** One file being uploaded from this device: uploading | done | error. */
+data class UploadRow(val name: String, val status: String, val error: String? = null)
 
 class ImportViewModel(private val manager: ImportManager) : ViewModel() {
 	val jobs: StateFlow<List<ImportJob>>
@@ -100,14 +109,18 @@ class ImportViewModel(private val manager: ImportManager) : ViewModel() {
 	val searching: StateFlow<Boolean>
 		field = MutableStateFlow(false)
 
+	val uploads: StateFlow<List<UploadRow>>
+		field = MutableStateFlow<List<UploadRow>>(emptyList())
+
 	private var searchJob: Job? = null
+	private var lastQuery: String? = null
 
 	init {
 		// Poll fast while something is downloading, slowly otherwise; stops with the screen.
 		viewModelScope.launch {
 			while (true) {
 				refresh()
-				delay(if (jobs.value.any { it.isActive }) 3_000 else 30_000)
+				delay(if (jobs.value.any { it.isActive }) 1_000 else 30_000)
 			}
 		}
 	}
@@ -121,20 +134,41 @@ class ImportViewModel(private val manager: ImportManager) : ViewModel() {
 		}
 	}
 
-	/** Search YouTube Music / YouTube, or preview a single link; a newer search cancels the last. */
-	fun search(query: String, source: String) {
+	/** Search YouTube Music + YouTube, or preview a single link; a newer search cancels the last. */
+	fun search(query: String) {
+		if (query == lastQuery) return
+		lastQuery = query
 		searchJob?.cancel()
 		searchJob = viewModelScope.launch {
 			searching.value = true
 			try {
-				results.value = manager.search(query, source)
+				results.value = manager.search(query)
 				error.value = null
 			} catch (e: CancellationException) {
 				throw e
 			} catch (e: Exception) {
+				lastQuery = null
 				error.value = e.message ?: "Search failed"
 			}
 			searching.value = false
+		}
+	}
+
+	/** Uploads [files] one at a time straight into the library. */
+	fun upload(files: List<PickedFile>) {
+		uploads.value = files.map { UploadRow(it.name, "uploading") }
+		viewModelScope.launch {
+			files.forEachIndexed { i, file ->
+				val row = try {
+					manager.upload(file.name, withContext(Dispatchers.IO) { file.read() })
+					UploadRow(file.name, "done")
+				} catch (e: CancellationException) {
+					throw e
+				} catch (e: Exception) {
+					UploadRow(file.name, "error", e.message ?: "Upload failed")
+				}
+				uploads.value = uploads.value.toMutableList().also { it[i] = row }
+			}
 		}
 	}
 
@@ -169,19 +203,28 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 	val submitting by viewModel.submitting.collectAsStateWithLifecycle()
 	val results by viewModel.results.collectAsStateWithLifecycle()
 	val searching by viewModel.searching.collectAsStateWithLifecycle()
+	val uploads by viewModel.uploads.collectAsStateWithLifecycle()
 	var text by rememberSaveable { mutableStateOf(initialText.orEmpty().replace('\n', ' ').trim()) }
-	var source by rememberSaveable { mutableStateOf("ytmusic") }
 	val keyboard = LocalSoftwareKeyboardController.current
+	val pickFiles = rememberAudioFilePicker { viewModel.upload(it) }
 
 	// Several links import straight away; one link is previewed; anything else is a search.
 	fun go() {
 		val urls = ImportManager.extractUrls(text)
 		when {
 			urls.size > 1 -> viewModel.submit(text) { ok -> if (ok) text = "" }
-			urls.size == 1 -> viewModel.search(urls.first(), source)
-			text.isNotBlank() -> viewModel.search(text.trim(), source)
+			urls.size == 1 -> viewModel.search(urls.first())
+			text.isNotBlank() -> viewModel.search(text.trim())
 		}
 		keyboard?.hide()
+	}
+
+	// Search as you type, once typing pauses; several pasted links still wait for the search key.
+	LaunchedEffect(text) {
+		val query = text.trim()
+		if (query.isEmpty() || ImportManager.extractUrls(query).size > 1) return@LaunchedEffect
+		delay(300)
+		viewModel.search(ImportManager.extractUrls(query).singleOrNull() ?: query)
 	}
 
 	// Shared from another app (share sheet): show it right away.
@@ -227,7 +270,7 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 		) {
 			item {
 				Text(
-					text = "Find songs on YouTube Music or YouTube — or paste a Spotify, TikTok or SoundCloud link — and import them into your library.",
+					text = "Find songs on YouTube Music and YouTube — or paste a Spotify, TikTok, SoundCloud or Audiomack link — and import them into your library.",
 					style = SvirkaText.Body,
 					color = mutedColor
 				)
@@ -249,23 +292,20 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 						textStyle = SvirkaText.Body,
 						shape = SvirkaShapes.Lg
 					)
-					Row(
-						modifier = Modifier.padding(top = 8.dp),
-						horizontalArrangement = Arrangement.spacedBy(8.dp)
-					) {
-						EXPLORE_SOURCES.forEach { (id, label) ->
-							FilterChip(
-								selected = source == id,
-								onClick = {
-									source = id
-									if (text.isNotBlank() && ImportManager.extractUrls(text).isEmpty()) go()
-								},
-								label = { Text(label, maxLines = 1) }
-							)
+					if (pickFiles != null) {
+						OutlinedButton(
+							onClick = pickFiles,
+							enabled = uploads.none { it.status == "uploading" },
+							modifier = Modifier.padding(top = 8.dp)
+						) {
+							Icon(SvirkaIcons.Upload, null, Modifier.size(18.dp))
+							Spacer(Modifier.width(8.dp))
+							Text("Upload files from this phone")
 						}
 					}
 				}
 			}
+			itemsIndexed(uploads, key = { i, _ -> "upload:$i" }) { _, row -> UploadRowView(row) }
 			error?.let { message ->
 				item {
 					Text(
@@ -322,14 +362,13 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 	}
 }
 
-private val EXPLORE_SOURCES = listOf("ytmusic" to "YouTube Music", "youtube" to "YouTube")
-
 private val SOURCE_LABELS = mapOf(
 	"ytmusic" to "YouTube Music",
 	"youtube" to "YouTube",
 	"spotify" to "Spotify",
 	"tiktok" to "TikTok",
 	"soundcloud" to "SoundCloud",
+	"audiomack" to "Audiomack",
 	"link" to "Link"
 )
 
@@ -384,6 +423,24 @@ private fun ExploreResultRow(result: ExploreResult, status: String?, onImport: (
 				else -> Icon(SvirkaIcons.Download, stringResource(Res.string.action_import), Modifier.size(20.dp))
 			}
 		}
+	}
+}
+
+@Composable
+private fun UploadRowView(row: UploadRow) {
+	Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+		when (row.status) {
+			"uploading" -> CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+			"done" -> Icon(SvirkaIcons.CircleCheck, "Uploaded", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+			else -> Icon(SvirkaIcons.CircleX, "Upload failed", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+		}
+		Text(
+			text = row.name + (row.error?.let { " — $it" } ?: ""),
+			style = SvirkaText.Small,
+			color = if (row.status == "error") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+			maxLines = 2,
+			overflow = TextOverflow.Ellipsis
+		)
 	}
 }
 

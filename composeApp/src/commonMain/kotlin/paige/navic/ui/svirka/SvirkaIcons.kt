@@ -56,6 +56,7 @@ object SvirkaIcons {
 	}
 	val ListMusic by lazy { lucide("ListMusic", "M16 5H3", "M11 12H3", "M11 19H3", "M21 16V5", circle(18f, 16f, 3f)) }
 	val Download by lazy { lucide("Download", "M12 15V3", "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "m7 10 5 5 5-5") }
+	val Upload by lazy { lucide("Upload", "M12 3v12", "m17 8-5-5-5 5", "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4") }
 	val Shuffle by lazy {
 		lucide(
 			"Shuffle",
