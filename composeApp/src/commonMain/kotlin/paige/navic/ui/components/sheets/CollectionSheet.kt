@@ -31,6 +31,7 @@ import navic.composeapp.generated.resources.action_delete
 import navic.composeapp.generated.resources.action_delete_download
 import navic.composeapp.generated.resources.action_download
 import navic.composeapp.generated.resources.action_play_next
+import navic.composeapp.generated.resources.action_shuffle
 import navic.composeapp.generated.resources.action_remove_star
 import navic.composeapp.generated.resources.action_share
 import navic.composeapp.generated.resources.action_star
@@ -62,6 +63,7 @@ import paige.navic.icons.outlined.PlaylistAdd
 import paige.navic.icons.outlined.PlaylistRemove
 import paige.navic.icons.outlined.Queue
 import paige.navic.icons.outlined.QueuePlayNext
+import paige.navic.ui.svirka.SvirkaIcons
 import paige.navic.icons.outlined.Share
 import paige.navic.icons.outlined.Star
 import paige.navic.ui.components.common.CoverArt
@@ -79,6 +81,7 @@ fun CollectionSheet(
 	onDeleteDownloadAll: (() -> Unit)? = null,
 	downloadStatus: DownloadStatus? = null,
 	onShare: (() -> Unit)? = null,
+	onShufflePlay: (() -> Unit)? = null,
 	onPlayNext: (() -> Unit)? = null,
 	onAddToQueue: (() -> Unit)? = null,
 	onAddAllToPlaylist: (() -> Unit)? = null,
@@ -184,6 +187,20 @@ fun CollectionSheet(
 					},
 					colors = colors,
 					contentPadding = contentPadding
+				)
+			}
+
+			if (onShufflePlay != null) {
+				ListItem(
+					content = { Text(stringResource(Res.string.action_shuffle)) },
+					leadingContent = { Icon(SvirkaIcons.Shuffle, null) },
+					onClick = {
+						onShufflePlay()
+						onDismissRequest()
+					},
+					colors = colors,
+					contentPadding = contentPadding,
+					enabled = !collection?.songs.isNullOrEmpty()
 				)
 			}
 

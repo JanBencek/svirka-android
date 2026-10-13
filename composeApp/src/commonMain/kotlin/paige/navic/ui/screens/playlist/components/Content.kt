@@ -19,6 +19,7 @@ fun LazyGridScope.playlistListScreenContent(
 	onClearSelection: () -> Unit,
 	onSetShareId: (String) -> Unit,
 	onSetDeletionId: (String) -> Unit,
+	onShufflePlay: () -> Unit,
 	onPlayNext: () -> Unit,
 	onAddToQueue: () -> Unit,
 ) {
@@ -35,6 +36,7 @@ fun LazyGridScope.playlistListScreenContent(
 					onDeselect = { onClearSelection() },
 					onSetShareId = onSetShareId,
 					onSetDeletionId = onSetDeletionId,
+					onShufflePlay = onShufflePlay,
 					onPlayNext = onPlayNext,
 					onAddToQueue = onAddToQueue,
 				)
@@ -47,6 +49,7 @@ fun LazyGridScope.playlistListScreenContent(
 					onDeselect = { onClearSelection() },
 					onSetShareId = onSetShareId,
 					onSetDeletionId = onSetDeletionId,
+					onShufflePlay = onShufflePlay,
 					onPlayNext = onPlayNext,
 					onAddToQueue = onAddToQueue,
 				)

@@ -180,6 +180,7 @@ fun PlaylistListScreen(
 					onSetDeletionId = { newDeletionId ->
 						deletionId = newDeletionId
 					},
+					onShufflePlay = { if (selectedPlaylist != null) player.shufflePlay(selectedPlaylist as DomainSongCollection) },
 					onPlayNext = { if (selectedPlaylist != null) player.playNext(selectedPlaylist as DomainSongCollection) },
 					onAddToQueue = {
 						if (selectedPlaylist != null) player.addToQueue(
