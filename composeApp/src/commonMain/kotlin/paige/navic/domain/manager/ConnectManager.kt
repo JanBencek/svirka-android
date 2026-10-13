@@ -79,11 +79,12 @@ data class ConnectDevice(
 	val state: ConnectState? = null
 )
 
-/** A Jam as this user sees it: [listener] is the device of theirs that plays along (null for the host). */
+/** A Jam as user [you] sees it: [listener] is the device of theirs that plays along (null for the host). */
 @Serializable
 data class JamView(
 	val id: String,
 	val host: String,
+	val you: String? = null,
 	val members: List<String> = emptyList(),
 	val listener: String? = null,
 	val state: ConnectState? = null

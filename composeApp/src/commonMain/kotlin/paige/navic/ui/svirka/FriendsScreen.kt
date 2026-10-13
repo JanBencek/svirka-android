@@ -219,7 +219,7 @@ private fun JamCard(
 				Button(onClick = onStart) { Text("Start a Jam") }
 			}
 
-			jam.listener == null -> {
+			jam.host == jam.you -> {
 				Text("Your Jam", style = SvirkaText.Section)
 				Text(
 					if (jam.members.isEmpty()) "Nobody has joined yet. Share the link with your friends."
