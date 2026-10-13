@@ -107,7 +107,10 @@ class SyncManager(
 			processQueue()
 
 			val currentTime = Clock.System.now()
-			if (currentTime - Instant.fromEpochMilliseconds(preferenceManager.lastFullSyncTime) > fullSyncThreshold) {
+			// a full pull when it's due, and always while the library on this phone is empty (e.g. a login whose sync failed)
+			if (albumDao.getAlbumCount() == 0 ||
+				currentTime - Instant.fromEpochMilliseconds(preferenceManager.lastFullSyncTime) > fullSyncThreshold
+			) {
 				Logger.i("SyncManager", "Starting full library pull...")
 
 				syncState.update {

@@ -13,10 +13,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import paige.navic.domain.repositories.DbRepository
 import paige.navic.ui.core.LoginUiState
+import kotlin.time.Clock
 
 class LoginManager(
     private val repository: DbRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val preferenceManager: PreferenceManager
 ) {
 	val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -88,9 +90,14 @@ class LoginManager(
 					passwordState.text.toString()
 				)
 
+				// A login starts from a clean library: nothing of the last account's (or a half-finished wipe) may linger,
+				// and the background sync must not think this account was synced already
+				repository.removeEverything()
+				preferenceManager.lastFullSyncTime = 0
 				repository.syncEverything { progress, message ->
 					loginState.value = LoginUiState.Syncing(progress, message)
 				}.onSuccess {
+					preferenceManager.lastFullSyncTime = Clock.System.now().toEpochMilliseconds()
 					loginState.value = LoginUiState.Success
 				}.onFailure { e ->
 					loginState.value = LoginUiState.Error(e as Exception)
@@ -107,6 +114,7 @@ class LoginManager(
 	fun logout() {
 		loginState.value = LoginUiState.Idle
 		sessionManager.logout()
+		preferenceManager.lastFullSyncTime = 0
 		scope.launch {
 			repository.removeEverything()
 		}
