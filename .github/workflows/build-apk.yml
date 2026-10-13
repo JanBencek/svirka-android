@@ -76,6 +76,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout repository (with tags, for the release notes)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Download APK artifact
         uses: actions/download-artifact@v7
         with:
@@ -91,11 +96,25 @@ jobs:
           APK=$(find apk -name "*.apk" | head -n 1)
           [ -n "$APK" ] || { echo "::error::no APK found in artifact"; exit 1; }
           cp "$APK" Svirka.apk
+          # Release notes: every commit since the build the previous release was made from (still tagged `build`),
+          # so a cancelled run's commits aren't lost; the last 20 if there's no previous release.
+          PREV=$(git rev-list -n 1 build 2>/dev/null || true)
+          if [ -n "$PREV" ]; then RANGE="$PREV..$GITHUB_SHA"; else RANGE="-20 $GITHUB_SHA"; fi
+          {
+            echo "## What's new"
+            git log --no-merges --format='%s' $RANGE \
+              | grep -vE '^(chore|ci|build|test|docs|style)(\(.*\))?:' \
+              | sed -E 's/^[a-z]+(\(.*\))?: //; s/^/- /' || true
+            echo
+            echo "Signed release APK from master@\`${GITHUB_SHA}\`. Direct install: https://github.com/JanBencek/svirka-android/releases/latest/download/Svirka.apk"
+          } > notes.md
+          cat notes.md
           # Delete previous release + its tag so the tag can be recreated
           # ('debug' = the old pre-signing debug channel).
           for t in debug build; do gh release delete $t --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" 2>/dev/null || true; done
           gh release create build Svirka.apk \
             --repo "$GITHUB_REPOSITORY" \
             --title "Svirka (${GITHUB_SHA::7})" \
-            --notes "Signed release APK from master@\`${GITHUB_SHA}\`. Direct install: https://github.com/JanBencek/svirka-android/releases/latest/download/Svirka.apk" \
+            --target "$GITHUB_SHA" \
+            --notes-file notes.md \
             --latest
