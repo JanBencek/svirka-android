@@ -4,15 +4,11 @@ import android.app.ActivityManager
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import com.google.firebase.FirebaseApp
-import com.google.firebase.messaging.FirebaseMessaging
-import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.dsl.module
 import paige.navic.androidApp.shared.AndroidResourceProvider
 import paige.navic.di.initKoin
-import paige.navic.domain.manager.ConnectManager
 import paige.navic.util.core.ResourceProvider
 import kotlin.system.exitProcess
 
@@ -46,11 +42,6 @@ class Application : android.app.Application() {
 			})
 			androidContext(this@Application)
 			androidLogger()
-		}
-
-		// Builds with FCM (GOOGLE_SERVICES_JSON): Svirka learns this phone's token, to push Jam invites to it
-		if (FirebaseApp.getApps(this).isNotEmpty()) {
-			FirebaseMessaging.getInstance().token.addOnSuccessListener { get<ConnectManager>().pushToken = it }
 		}
 	}
 

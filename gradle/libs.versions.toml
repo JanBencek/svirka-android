@@ -39,7 +39,6 @@ koin = "4.2.2"
 aboutLibraries = "15.0.4"
 
 [libraries]
-firebase-messaging = { module = "com.google.firebase:firebase-messaging", version = "24.1.0" } # Jam invites (PushService)
 # Compose
 cmp-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
 cmp-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }

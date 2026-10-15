@@ -28,21 +28,6 @@ extensions.configure<ApplicationExtension> {
 		versionCode = if (build != null) 1000 + build else 43
 		versionName = if (build != null) "build-$build" else "v1.0.0-alpha43"
 
-		// FCM, so Jam invites reach a closed app: CI hands over google-services.json (Firebase console) as
-		// GOOGLE_SERVICES_JSON and Firebase starts from these strings, as the google-services plugin would set up.
-		// Without it (local and branch builds) the app has no push and gets invites only while it runs.
-		System.getenv("GOOGLE_SERVICES_JSON")?.takeIf { it.isNotBlank() }?.let { text ->
-			val json = groovy.json.JsonSlurper().parseText(text) as Map<*, *>
-			val project = json["project_info"] as Map<*, *>
-			val client = (json["client"] as List<*>).map { it as Map<*, *> }.first {
-				((it["client_info"] as Map<*, *>)["android_client_info"] as Map<*, *>)["package_name"] == applicationId
-			}
-			resValue("string", "google_app_id", (client["client_info"] as Map<*, *>)["mobilesdk_app_id"] as String)
-			resValue("string", "google_api_key", ((client["api_key"] as List<*>).first() as Map<*, *>)["current_key"] as String)
-			resValue("string", "gcm_defaultSenderId", project["project_number"] as String)
-			resValue("string", "project_id", project["project_id"] as String)
-		}
-
 		ndk {
 			abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
 			val isRelease = System.getenv("RELEASE")?.toBoolean() ?: false
@@ -134,5 +119,4 @@ dependencies {
 	implementation(libs.bundles.glance)
 	implementation(libs.bundles.coil)
 	implementation(libs.bundles.media3)
-	implementation(libs.firebase.messaging)
 }

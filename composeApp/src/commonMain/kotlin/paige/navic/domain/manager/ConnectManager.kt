@@ -114,9 +114,6 @@ private data class JamInvite(val id: String, val from: String, val host: String)
 private data class JamResponse(val jam: JamView? = null, val error: String? = null)
 
 @Serializable
-private data class PushBody(val token: String)
-
-@Serializable
 private data class FollowBody(val user: String, val follow: Boolean)
 
 @Serializable
@@ -151,8 +148,8 @@ class ConnectManager(
 	private val preferences: PreferenceManager,
 	private val snackBar: SnackBarManager,
 	private val deviceName: String,
-	/** Shows a Jam invite ([text], the Jam's id) as a system notification; false: not now, the snack bar has it. */
-	private val notifyInvite: (text: String, jamId: String) -> Boolean = { _, _ -> false }
+	/** Shows a Jam invite ([text], the Jam's [link]) as a system notification; false: not now, the snack bar has it. */
+	private val notifyInvite: (text: String, link: String) -> Boolean = { _, _ -> false }
 ) {
 	val deviceId: String = settings.getStringOrNull("connectDeviceId")
 		?: Uuid.random().toString().also { settings["connectDeviceId"] = it }
@@ -177,23 +174,6 @@ class ConnectManager(
 	private var base = ""
 	private var auth = ""
 	private var connected = false
-
-	/** This phone's FCM token (Android builds with push): Svirka gets it on every connect, to push Jam invites here. */
-	var pushToken: String? = null
-		set(value) {
-			field = value
-			if (connected) scope.launch { sendPushToken() }
-		}
-
-	private suspend fun sendPushToken() {
-		val token = pushToken ?: return
-		runCatching {
-			client.post("$base/api/connect/push?$auth") {
-				contentType(ContentType.Application.Json)
-				setBody(PushBody(token))
-			}
-		}
-	}
 
 	fun start() {
 		scope.launch { connectLoop() }
@@ -354,7 +334,6 @@ class ConnectManager(
 				) {
 					connected = true
 					backoff = 1
-					launch { sendPushToken() }
 					lastReport = null // report right away so the others see what plays here
 					incoming.collect { event ->
 						val data = event.data ?: return@collect
@@ -430,7 +409,7 @@ class ConnectManager(
 		val (text, args) = if (i.from == i.host) Res.string.jam_invite to arrayOf(i.from)
 		else Res.string.jam_invite_to to arrayOf(i.from, i.host)
 		scope.launch {
-			if (!notifyInvite(getString(text, *args), i.id))
+			if (!notifyInvite(getString(text, *args), "$base/jam/${i.id}"))
 				snackBar.notifyWithAction(text, Res.string.jam_join, { joinJam(i.id) }, *args)
 		}
 	}
