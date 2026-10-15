@@ -15,10 +15,11 @@ import androidx.core.net.toUri
 /**
  * A Jam invite while Svirka isn't on screen: a notification that opens the app on the Jam's link, which joins it
  * (MainActivity.handleJamLink). On screen, or with notifications off, [show] returns false: the snack bar has it then.
- * ponytail: only while the app's process lives (Connect's stream); a closed app needs push (FCM) to hear of invites.
+ * Called for Connect's `invite` event and for the same invite pushed by FCM (PushService): one notification per Jam.
  */
 class JamInviteNotifier(private val context: Context, private val icon: Int) {
-	fun show(text: String, link: String): Boolean {
+	fun show(text: String, jamId: String): Boolean {
+		val link = "https://music.bencit.com/jam/$jamId"
 		val app = ActivityManager.RunningAppProcessInfo().also(ActivityManager::getMyMemoryState)
 		if (app.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) return false
 		if (Build.VERSION.SDK_INT >= 33 &&

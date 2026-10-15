@@ -47,6 +47,7 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SIGNING_STORE_FILE: ${{ github.workspace }}/release.p12
           KEYSTORE_B64: ${{ secrets.KEYSTORE }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }} # FCM for Jam invites; unset: no push
           RELEASE: true
           SVIRKA_BUILD: ${{ github.run_number }}
         run: |

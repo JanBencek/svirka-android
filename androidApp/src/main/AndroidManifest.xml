@@ -88,6 +88,15 @@
 			android:process=":crash"
 			android:theme="@style/Theme.Navic" />
 
+		<!-- FCM: Jam invites while the app is closed (PushService.kt) -->
+		<service
+			android:name=".PushService"
+			android:exported="false">
+			<intent-filter>
+				<action android:name="com.google.firebase.MESSAGING_EVENT" />
+			</intent-filter>
+		</service>
+
 		<service
 			android:name="paige.navic.shared.PlaybackService"
 			android:enabled="true"
