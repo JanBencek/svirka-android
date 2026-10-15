@@ -25,6 +25,12 @@ class SnackBarManager {
 		}
 	}
 
+	fun notifyWithAction(resource: StringResource, action: StringResource, onAction: () -> Unit, vararg args: Any) {
+		scope.launch {
+			_events.emit(PlayerEvent(resource, args.toList(), action, onAction))
+		}
+	}
+
 	fun notifyAddedToQueue() = notify(Res.string.notice_added_to_queue)
 	fun notifyPlayNext() = notify(Res.string.notice_play_next)
 }

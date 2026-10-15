@@ -35,6 +35,10 @@ import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.jam_added
 import navic.composeapp.generated.resources.jam_enqueued
 import navic.composeapp.generated.resources.jam_error
+import navic.composeapp.generated.resources.jam_invite
+import navic.composeapp.generated.resources.jam_invite_to
+import navic.composeapp.generated.resources.jam_invited
+import navic.composeapp.generated.resources.jam_join
 import okio.ByteString.Companion.encodeUtf8
 import paige.navic.domain.models.DomainSong
 import paige.navic.domain.models.settings.ThemeMode
@@ -100,6 +104,10 @@ data class Friend(val user: String, val online: Boolean = false, val now: Friend
 /** [others]: users this user could follow. */
 @Serializable
 data class Friends(val friends: List<Friend> = emptyList(), val others: List<String> = emptyList())
+
+/** User [from] invites this user to Jam [id], hosted by [host]. */
+@Serializable
+private data class JamInvite(val id: String, val from: String, val host: String)
 
 @Serializable
 private data class JamResponse(val jam: JamView? = null, val error: String? = null)
@@ -194,6 +202,11 @@ class ConnectManager(
 	fun joinJam(id: String) = jamAction("join") {
 		put("id", id)
 		put("device", deviceId)
+	}
+
+	/** Anyone in a Jam can invite [user]: every device of theirs that's open offers to join. */
+	fun inviteToJam(user: String) = jamAction("invite", onDone = { snackBar.notify(Res.string.jam_invited, user) }) {
+		put("user", user)
 	}
 
 	/** A guest leaves; the host ends the Jam for everyone. */
@@ -326,6 +339,7 @@ class ConnectManager(
 							"command" -> handle(json.decodeFromString(data))
 							"theme" -> applyHubTheme(json.decodeFromString(data))
 							"jam" -> jam.value = json.decodeFromString<JamView?>(data)
+							"invite" -> invited(json.decodeFromString(data))
 						}
 					}
 				}
@@ -386,6 +400,11 @@ class ConnectManager(
 				if (index >= 0) (state.position * 1000).toLong() else 0L
 			)
 		}
+	}
+
+	private fun invited(i: JamInvite) {
+		if (i.from == i.host) snackBar.notifyWithAction(Res.string.jam_invite, Res.string.jam_join, { joinJam(i.id) }, i.from)
+		else snackBar.notifyWithAction(Res.string.jam_invite_to, Res.string.jam_join, { joinJam(i.id) }, i.from, i.host)
 	}
 
 	/** Hosting a Jam: a guest added [added] to our queue. */

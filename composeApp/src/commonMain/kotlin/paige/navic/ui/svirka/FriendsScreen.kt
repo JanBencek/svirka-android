@@ -176,6 +176,7 @@ fun FriendsScreen(nested: Boolean = false) {
 					friend = friend,
 					inThatJam = friend.jam != null && friend.jam == jam?.id,
 					onJoin = { friend.jam?.let(connect::joinJam) },
+					onInvite = if (jam != null) ({ connect.inviteToJam(friend.user) }) else null,
 					onUnfollow = { follow(friend.user, false) }
 				)
 			}
@@ -246,7 +247,7 @@ private fun JamCard(
 			jam.host == jam.you -> {
 				Text("Your Jam", style = SvirkaText.Section)
 				Text(
-					if (jam.members.isEmpty()) "Nobody has joined yet. Share the link with your friends."
+					if (jam.members.isEmpty()) "Nobody has joined yet. Invite friends below or share the link."
 					else "With " + jam.members.joinToString(", "),
 					style = SvirkaText.Body,
 					color = mutedColor
@@ -278,7 +279,13 @@ private fun JamCard(
 }
 
 @Composable
-private fun FriendRow(friend: Friend, inThatJam: Boolean, onJoin: () -> Unit, onUnfollow: () -> Unit) {
+private fun FriendRow(
+	friend: Friend,
+	inThatJam: Boolean,
+	onJoin: () -> Unit,
+	onInvite: (() -> Unit)?, // null: not in a Jam
+	onUnfollow: () -> Unit
+) {
 	val now = friend.now
 	var menu by remember { mutableStateOf(false) }
 	Box {
@@ -321,6 +328,8 @@ private fun FriendRow(friend: Friend, inThatJam: Boolean, onJoin: () -> Unit, on
 			}
 			if (friend.jam != null && !inThatJam) {
 				TextButton(onClick = onJoin) { Text("Join Jam") }
+			} else if (onInvite != null && !inThatJam) {
+				TextButton(onClick = onInvite) { Text("Invite") }
 			}
 		}
 		DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {

@@ -13,4 +13,8 @@
 	<string name="jam_added">Added to the Jam</string>
 	<string name="jam_enqueued">%1$s added %2$s</string>
 	<string name="jam_error">%1$s</string>
+	<string name="jam_invite">%1$s invites you to their Jam</string>
+	<string name="jam_invite_to">%1$s invites you to %2$s\'s Jam</string>
+	<string name="jam_invited">Invited %1$s</string>
+	<string name="jam_join">Join</string>
 </resources>
