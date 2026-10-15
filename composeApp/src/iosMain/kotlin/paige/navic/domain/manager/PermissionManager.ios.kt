@@ -8,4 +8,5 @@ actual class PermissionManager {
 		// it's annoying to trigger this dialogue on iOS
 		return true
 	}
+	actual suspend fun requestNotificationPermission(): Boolean = true // no Jam invites on iOS yet
 }

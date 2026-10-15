@@ -49,12 +49,23 @@ actual class PermissionManager(
 
 		if (alreadyGranted) return true
 
-		return suspendCancellableCoroutine { continuation ->
-			pendingContinuation = continuation
-			continuation.invokeOnCancellation {
-				pendingContinuation = null
-			}
-			permissionLauncher!!.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+		return request(Manifest.permission.ACCESS_LOCAL_NETWORK)
+	}
+
+	/** Android 13+: Jam invites show as notifications only with this. */
+	actual suspend fun requestNotificationPermission(): Boolean {
+		if (Build.VERSION.SDK_INT < 33) return true
+		if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+			return true
 		}
+		return request(Manifest.permission.POST_NOTIFICATIONS)
+	}
+
+	private suspend fun request(permission: String): Boolean = suspendCancellableCoroutine { continuation ->
+		pendingContinuation = continuation
+		continuation.invokeOnCancellation {
+			pendingContinuation = null
+		}
+		permissionLauncher!!.launch(permission)
 	}
 }

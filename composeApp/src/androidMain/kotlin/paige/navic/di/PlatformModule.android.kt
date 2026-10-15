@@ -12,6 +12,7 @@ import paige.navic.data.database.DownloadDatabase
 import paige.navic.domain.manager.AppIconManager
 import paige.navic.domain.manager.ConnectManager
 import paige.navic.domain.manager.ConnectivityManager
+import paige.navic.domain.manager.JamInviteNotifier
 import paige.navic.domain.manager.LogManager
 import paige.navic.domain.manager.PermissionManager
 import paige.navic.domain.manager.ShareManager
@@ -19,6 +20,7 @@ import paige.navic.domain.manager.StorageManager
 import paige.navic.shared.AndroidMediaPlayerViewModel
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.util.core.PlatformType
+import paige.navic.util.core.ResourceProvider
 
 actual val platformModule = module {
 	single { PlatformType.Android }
@@ -63,7 +65,8 @@ actual val platformModule = module {
 	single(createdAtStart = true) {
 		val name = Settings.Global.getString(androidApplication().contentResolver, Settings.Global.DEVICE_NAME)
 			?: Build.MODEL
-		ConnectManager(get(), get(), get(), get(), get(), name).apply { start() }
+		val invites = JamInviteNotifier(androidApplication(), get<ResourceProvider>().icNavic)
+		ConnectManager(get(), get(), get(), get(), get(), name, invites::show).apply { start() }
 	}
 
 	singleOf(::ShareManager)

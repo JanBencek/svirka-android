@@ -58,6 +58,7 @@ import paige.navic.domain.manager.ConnectManager
 import paige.navic.domain.manager.Friend
 import paige.navic.domain.manager.Friends
 import paige.navic.domain.manager.JamView
+import paige.navic.domain.manager.PermissionManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.ShareManager
 import paige.navic.domain.models.settings.BottomBarVisibilityMode
@@ -81,6 +82,10 @@ fun FriendsScreen(nested: Boolean = false) {
 	var query by remember { mutableStateOf("") }
 	val scope = rememberCoroutineScope()
 	val lifecycle = LocalLifecycleOwner.current.lifecycle
+	val permissions = koinInject<PermissionManager>()
+
+	// Jam invites reach this phone as notifications while Svirka is in the background (Android 13+ asks first)
+	LaunchedEffect(Unit) { permissions.requestNotificationPermission() }
 
 	suspend fun update(call: suspend () -> Friends) {
 		try {

@@ -40,6 +40,7 @@ import navic.composeapp.generated.resources.jam_invite_to
 import navic.composeapp.generated.resources.jam_invited
 import navic.composeapp.generated.resources.jam_join
 import okio.ByteString.Companion.encodeUtf8
+import org.jetbrains.compose.resources.getString
 import paige.navic.domain.models.DomainSong
 import paige.navic.domain.models.settings.ThemeMode
 import paige.navic.domain.repositories.CollectionRepository
@@ -146,7 +147,9 @@ class ConnectManager(
 	private val collections: CollectionRepository,
 	private val preferences: PreferenceManager,
 	private val snackBar: SnackBarManager,
-	private val deviceName: String
+	private val deviceName: String,
+	/** Shows a Jam invite ([text], the Jam's [link]) as a system notification; false: not now, the snack bar has it. */
+	private val notifyInvite: (text: String, link: String) -> Boolean = { _, _ -> false }
 ) {
 	val deviceId: String = settings.getStringOrNull("connectDeviceId")
 		?: Uuid.random().toString().also { settings["connectDeviceId"] = it }
@@ -403,8 +406,12 @@ class ConnectManager(
 	}
 
 	private fun invited(i: JamInvite) {
-		if (i.from == i.host) snackBar.notifyWithAction(Res.string.jam_invite, Res.string.jam_join, { joinJam(i.id) }, i.from)
-		else snackBar.notifyWithAction(Res.string.jam_invite_to, Res.string.jam_join, { joinJam(i.id) }, i.from, i.host)
+		val (text, args) = if (i.from == i.host) Res.string.jam_invite to arrayOf(i.from)
+		else Res.string.jam_invite_to to arrayOf(i.from, i.host)
+		scope.launch {
+			if (!notifyInvite(getString(text, *args), "$base/jam/${i.id}"))
+				snackBar.notifyWithAction(text, Res.string.jam_join, { joinJam(i.id) }, *args)
+		}
 	}
 
 	/** Hosting a Jam: a guest added [added] to our queue. */
