@@ -253,9 +253,7 @@ fun CollectionDetailScreen(
 											isPlaylist = false,
 											onClick = {
 												if (playerState.currentSong?.id != song.id) {
-													player.playNow(
-														album,
-														album.songs.indexOfFirst { it.id == song.id })
+													player.playNow(song)
 												} else {
 													player.togglePlay()
 												}
@@ -307,7 +305,7 @@ fun CollectionDetailScreen(
 									isPlaylist = true,
 									onClick = {
 										if (playerState.currentSong?.id != song.id) {
-											player.playNow(collection, index)
+											player.playNow(song)
 										} else {
 											player.togglePlay()
 										}

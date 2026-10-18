@@ -3,6 +3,7 @@ package paige.navic.shared
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -141,19 +142,33 @@ abstract class MediaPlayerViewModel(
 		if (duration > 0) seek((seconds * 1000 / duration).toFloat().coerceIn(0f, 1f))
 	}
 
+	private var autoFill: Job? = null
+
+	/** Music never stops (like the Svirka web app): on the last song, a random one from the library is queued next. */
 	protected fun checkAndAutoFillQueue() {
-		if (!preferenceManager.autoFillQueue) return
+		// not in a Jam (the host's queue), not on repeat, and one at a time (playNow and the transition both ask)
+		if (!preferenceManager.autoFillQueue || jam != null || autoFill?.isActive == true) return
 
 		val state = uiState.value
-		if (state.queue.isEmpty()) return
+		if (state.queue.isEmpty() || state.repeatMode != 0) return
 
 		val remainingCount = state.queue.size - state.currentIndex
 
 		if (remainingCount <= 1) {
-			viewModelScope.launch {
+			autoFill = viewModelScope.launch {
 				val randomSongs = songRepository.getRandomSongs(1)
 				addToQueue(randomSongs, notify = false)
 			}
+		}
+	}
+
+	/** The queue ran out anyway (shuffle order, or Next on the last song): play a random song from the library. */
+	protected fun playRandomSong() {
+		if (!preferenceManager.autoFillQueue || jam != null || uiState.value.queue.isEmpty()) return
+		viewModelScope.launch {
+			val song = songRepository.getRandomSongs(1).firstOrNull() ?: return@launch
+			addToQueueSingle(song, notify = false)
+			playAt(uiState.value.queue.lastIndex)
 		}
 	}
 

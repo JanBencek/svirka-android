@@ -123,7 +123,7 @@ fun GenreDetailScreen(
 					}
 				},
 				onPlaySong = { index ->
-					player.playNow(songsState.data.orEmpty(), index)
+					songsState.data.orEmpty().getOrNull(index)?.let { player.playNow(it) }
 				},
 				onSetSongRating = { songsViewModel.rateSelectedSong(it) },
 				onDownloadSong = { songsViewModel.downloadSong(it) },

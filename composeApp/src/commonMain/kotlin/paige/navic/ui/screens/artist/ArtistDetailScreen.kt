@@ -298,7 +298,7 @@ fun ArtistDetailScreen(
 												)
 											}
 											// ponytail: top 10 inline; "See all" opens the full list
-											songs.take(10).forEachIndexed { index, song ->
+											songs.take(10).forEach { song ->
 												val download =
 													allDownloads.find { it.songId == song.id }
 												SongRow(
@@ -307,7 +307,7 @@ fun ArtistDetailScreen(
 													selected = selection == song,
 													onClick = {
 														if (playerState.currentSong?.id != song.id) {
-															player.playNow(songs, index)
+															player.playNow(song)
 														} else {
 															player.togglePlay()
 														}

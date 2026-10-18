@@ -81,7 +81,7 @@ class PreferenceManager(
 	var customHeaders by preference("")
 	var checkForUpdates by preference(true)
 	var explicitContentPlayback by preference(ExplicitContentPlayback.Allowed)
-	var autoFillQueue by preference(false)
+	var autoFillQueue by preference(true) // Svirka: music never stops, like the web app
 
 	// navigation bar settings
 	var bottomBarCollapseMode by preference(BottomBarCollapseMode.Never) // Svirka: fixed nav, like the web app

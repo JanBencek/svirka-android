@@ -452,6 +452,9 @@ class AndroidMediaPlayerViewModel(
 					override fun onPlaybackStateChanged(playbackState: Int) {
 						_uiState.update { it.copy(isLoading = playbackState == Player.STATE_BUFFERING) }
 						updatePlaybackState()
+						// the last song finished on its own (a cleared queue has no items; a replaced one was sought away from ENDED)
+						val player = controller ?: return
+						if (player.playbackState == Player.STATE_ENDED && player.mediaItemCount > 0) playRandomSong()
 					}
 
 					override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -1051,7 +1054,8 @@ class AndroidMediaPlayerViewModel(
 	override fun next() {
 		if (toJam("next")) return
 		viewModelScope.launch(Dispatchers.Main.immediate) {
-			if (controller?.hasNextMediaItem() == true) controller?.seekToNextMediaItem()
+			val controller = controller ?: return@launch
+			if (controller.hasNextMediaItem()) controller.seekToNextMediaItem() else playRandomSong()
 		}
 	}
 

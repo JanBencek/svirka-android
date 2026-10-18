@@ -126,7 +126,7 @@ fun StarredScreen() {
 				selectedSong = selectedSong,
 				allDownloads = allDownloads,
 				onPlaySong = { index ->
-					player.playNow(songsState.data.orEmpty(), index)
+					songsState.data.orEmpty().getOrNull(index)?.let { player.playNow(it) }
 				},
 				onSelectSong = {
 					songsViewModel.selectSong(it)
