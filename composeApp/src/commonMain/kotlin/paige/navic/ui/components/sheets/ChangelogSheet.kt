@@ -34,6 +34,7 @@ import io.ktor.client.request.get
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -41,6 +42,7 @@ import kotlinx.serialization.json.Json
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_dont_show_again
 import navic.composeapp.generated.resources.action_update_app
+import navic.composeapp.generated.resources.info_downloading_update
 import navic.composeapp.generated.resources.info_update
 import navic.composeapp.generated.resources.title_update
 import org.jetbrains.compose.resources.stringResource
@@ -49,6 +51,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import paige.navic.LocalPlatformContext
 import paige.navic.domain.manager.PreferenceManager
+import paige.navic.domain.manager.UpdateManager
 import paige.navic.ui.components.common.Markdown
 import paige.navic.ui.theme.defaultFont
 import paige.navic.util.core.Logger
@@ -102,6 +105,31 @@ class ChangelogViewModel(
 	fun clearRelease() {
 		release.value = null
 	}
+
+	/** 0..1 while the update downloads; null otherwise. */
+	val progress: StateFlow<Float?>
+		field = MutableStateFlow(null)
+
+	/** Download the new APK and hand it to the installer; [openReleasePage] where that can't happen. */
+	fun update(updateManager: UpdateManager, openReleasePage: () -> Unit) {
+		if (progress.value != null) return
+		viewModelScope.launch {
+			progress.value = 0f
+			try {
+				if (!updateManager.install(APK_URL) { progress.value = it }) openReleasePage()
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				Logger.e("ChangelogViewModel", "couldn't download the update", e)
+				openReleasePage()
+			}
+			progress.value = null
+		}
+	}
+
+	private companion object {
+		const val APK_URL = "https://github.com/JanBencek/svirka-android/releases/latest/download/Svirka.apk"
+	}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,6 +142,8 @@ fun ChangelogSheet() {
 		parameters = { parametersOf(platformContext) }
 	)
 	val release by viewModel.release.collectAsStateWithLifecycle()
+	val progress by viewModel.progress.collectAsStateWithLifecycle()
+	val updateManager = koinInject<UpdateManager>()
 
 	release?.let { release ->
 		ModalBottomSheet(
@@ -162,14 +192,19 @@ fun ChangelogSheet() {
 
 				Button(
 					onClick = {
-						viewModel.clearRelease()
-						uriHandler.openUri(release.url)
+						viewModel.update(updateManager) {
+							viewModel.clearRelease()
+							uriHandler.openUri(release.url)
+						}
 					},
+					enabled = progress == null,
 					modifier = Modifier.fillMaxWidth(),
 					shape = ContinuousCapsule
 				) {
 					Text(
-						text = stringResource(Res.string.action_update_app),
+						text = progress?.let {
+							stringResource(Res.string.info_downloading_update, "${(it * 100).toInt()}%")
+						} ?: stringResource(Res.string.action_update_app),
 						fontFamily = defaultFont(100)
 					)
 				}

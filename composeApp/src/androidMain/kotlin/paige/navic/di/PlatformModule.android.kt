@@ -17,6 +17,7 @@ import paige.navic.domain.manager.LogManager
 import paige.navic.domain.manager.PermissionManager
 import paige.navic.domain.manager.ShareManager
 import paige.navic.domain.manager.StorageManager
+import paige.navic.domain.manager.UpdateManager
 import paige.navic.shared.AndroidMediaPlayerViewModel
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.util.core.PlatformType
@@ -75,4 +76,5 @@ actual val platformModule = module {
 	singleOf(::LogManager)
 	singleOf(::AppIconManager)
 	singleOf(::PermissionManager)
+	singleOf(::UpdateManager)
 }

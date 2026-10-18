@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Svirka Connect, Friends and Jam (ConnectManager, DevicesSheet, FriendsScreen). Separate file so upstream strings.xml merges stay clean. -->
+<!-- Svirka-only strings: Connect, Friends and Jam (ConnectManager, DevicesSheet, FriendsScreen), feedback, self-update. Separate file so upstream strings.xml merges stay clean. -->
 <resources>
 	<string name="connect_devices">Devices</string>
 	<string name="connect_play_on">Play on</string>
@@ -17,4 +17,11 @@
 	<string name="jam_invite_to">%1$s invites you to %2$s\'s Jam</string>
 	<string name="jam_invited">Invited %1$s</string>
 	<string name="jam_join">Join</string>
+	<string name="title_feedback">Send feedback</string>
+	<string name="subtitle_feedback">Tell us what to fix or add</string>
+	<string name="feedback_hint">What\'s on your mind?</string>
+	<string name="action_send">Send</string>
+	<string name="feedback_sent">Thanks for the feedback!</string>
+	<string name="feedback_error">Couldn\'t send feedback. Try again later.</string>
+	<string name="info_downloading_update">Downloading… %1$s</string>
 </resources>
