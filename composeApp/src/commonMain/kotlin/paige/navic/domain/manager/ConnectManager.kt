@@ -197,6 +197,19 @@ class ConnectManager(
 		}.body()
 	}
 
+	/** Svirka feedback (Settings): [message] goes to the server's admin. True when the server took it. */
+	suspend fun sendFeedback(message: String, version: String): Boolean {
+		awaitAuth()
+		return client.post("$base/api/feedback?$auth") {
+			contentType(ContentType.Application.Json)
+			setBody(buildJsonObject {
+				put("message", message.take(4000))
+				put("app", "android")
+				put("version", version)
+			})
+		}.status.isSuccess()
+	}
+
 	/* ---- Jam: listen along with friends, like Spotify Jam ---- */
 
 	fun startJam() = jamAction("start")

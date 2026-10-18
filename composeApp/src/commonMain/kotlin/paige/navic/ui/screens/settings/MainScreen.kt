@@ -15,6 +15,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,6 +32,7 @@ import navic.composeapp.generated.resources.subtitle_appearance
 import navic.composeapp.generated.resources.subtitle_bottom_app_bar
 import navic.composeapp.generated.resources.subtitle_data_storage
 import navic.composeapp.generated.resources.subtitle_developer
+import navic.composeapp.generated.resources.subtitle_feedback
 import navic.composeapp.generated.resources.subtitle_now_playing
 import navic.composeapp.generated.resources.subtitle_playback
 import navic.composeapp.generated.resources.title_about
@@ -35,6 +40,7 @@ import navic.composeapp.generated.resources.title_appearance
 import navic.composeapp.generated.resources.title_bottom_app_bar
 import navic.composeapp.generated.resources.title_data_storage
 import navic.composeapp.generated.resources.title_developer
+import navic.composeapp.generated.resources.title_feedback
 import navic.composeapp.generated.resources.title_now_playing
 import navic.composeapp.generated.resources.title_playback
 import navic.composeapp.generated.resources.title_settings
@@ -51,15 +57,19 @@ import paige.navic.icons.filled.Play
 import paige.navic.icons.outlined.ChevronForward
 import paige.navic.icons.outlined.Code
 import paige.navic.icons.outlined.DataTable
+import paige.navic.icons.outlined.Feedback
 import paige.navic.icons.outlined.Note
 import paige.navic.ui.components.common.Form
 import paige.navic.ui.components.common.FormRow
 import paige.navic.ui.components.layouts.NestedTopBar
 import paige.navic.ui.navigation.Screen
+import paige.navic.ui.svirka.FeedbackDialog
 import paige.navic.ui.theme.defaultFont
 
 @Composable
 fun SettingsScreen() {
+	var showFeedback by remember { mutableStateOf(false) }
+	if (showFeedback) FeedbackDialog { showFeedback = false }
 	Scaffold(
 		topBar = { NestedTopBar({ Text(stringResource(Res.string.title_settings)) }) }
 	) { innerPadding ->
@@ -115,6 +125,12 @@ fun SettingsScreen() {
 			}
 			Form {
 				PageRow(
+					icon = Icons.Outlined.Feedback,
+					title = Res.string.title_feedback,
+					subtitle = Res.string.subtitle_feedback,
+					onClick = { showFeedback = true }
+				)
+				PageRow(
 					destination = Screen.Settings.About,
 					icon = Icons.Filled.Info,
 					title = Res.string.title_about,
@@ -132,12 +148,14 @@ private fun PageRow(
 	icon: ImageVector,
 	iconSize: Dp = 22.dp,
 	title: StringResource,
-	subtitle: StringResource
+	subtitle: StringResource,
+	onClick: () -> Unit = {}
 ) {
 	val backStack = LocalNavStack.current
 	val preferenceManager = koinInject<PreferenceManager>()
 	FormRow(
 		onClick = dropUnlessResumed {
+			if (destination == null) onClick()
 			destination?.let { destination ->
 				backStack.lastOrNull()?.let {
 					if (it is Screen.Settings) {
