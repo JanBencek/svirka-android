@@ -323,6 +323,7 @@
 	<string name="info_import_queued">Queued</string>
 	<string name="info_import_running">Downloading…</string>
 	<string name="info_import_failed">Failed</string>
+	<string name="notice_play_import_failed">Couldn't play that song</string>
 	<string name="action_clear_search">Clear</string>
 	<string name="action_more">More</string>
 	<string name="action_add_to_playlist">Add to Playlist</string>

@@ -37,7 +37,9 @@ data class ImportJob(
 	@SerialName("items_added") val itemsAdded: Int = 0,
 	val summary: String = "",
 	val error: String = "",
-	@SerialName("created_at") val createdAt: Long = 0
+	@SerialName("created_at") val createdAt: Long = 0,
+	// library ids of the job's songs once done, also when they were already in the library
+	@SerialName("song_ids") val songIds: List<String> = emptyList()
 ) {
 	val isActive get() = status == "queued" || status == "running"
 }
@@ -61,7 +63,10 @@ data class ExploreResult(
 private data class SearchResponse(val results: List<ExploreResult>)
 
 @Serializable
-private data class ImportRequest(val url: String)
+private data class ImportRequest(val url: String, val play: Boolean = false)
+
+@Serializable
+private data class ImportQueued(@SerialName("job_id") val jobId: String)
 
 @Serializable
 private data class ErrorResponse(val error: String)
@@ -139,6 +144,29 @@ class ImportManager(private val settings: Settings, private val dbRepository: Db
 			setBody(ImportRequest(url))
 		}.check()
 		watch()
+	}
+
+	/**
+	 * Imports [url] ahead of the queue (someone is waiting to hear it) and returns its songs' ids once
+	 * they're in the local library — a few seconds for one song.
+	 */
+	suspend fun importForPlay(url: String): List<String> {
+		val id = client.post(endpoint("import")) {
+			auth()
+			contentType(ContentType.Application.Json)
+			setBody(ImportRequest(url, play = true))
+		}.check().body<ImportQueued>().jobId
+		repeat(300) { // ponytail: gives up after ~5 min; a long playlist keeps importing, it just won't autoplay
+			delay(1_000)
+			val job = runCatching { client.get(endpoint("jobs/$id")) { auth() }.check().body<ImportJob>() }.getOrNull()
+				?: return@repeat // network blip: ask again
+			if (job.status == "error") throw IllegalStateException(job.error.ifBlank { "Import failed" })
+			if (job.status == "done") {
+				if (job.itemsAdded > 0) syncNewSongs()
+				return job.songIds
+			}
+		}
+		throw IllegalStateException("Import is taking too long")
 	}
 
 	/** Polls until the queued imports finish, pulling each finished one into the local library. */

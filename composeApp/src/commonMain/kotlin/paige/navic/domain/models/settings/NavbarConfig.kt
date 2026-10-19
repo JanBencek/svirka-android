@@ -11,14 +11,15 @@ data class NavbarConfig(
 ) {
 	companion object {
 		const val KEY = "navbarConfig"
-		const val VERSION = 10
+		const val VERSION = 11
 		val default = NavbarConfig(
 			tabs = listOf(
-				// Svirka: web nav (Songs, Playlists, Explore, Friends) + Library for albums/artists.
+				// Svirka: web nav (Songs, Playlists, Friends) + Library for albums/artists.
+				// Explore is part of Songs' search now; the Import screen stays for shared links and uploads.
 				NavbarTab(NavbarTab.Id.SONGS, true),
 				NavbarTab(NavbarTab.Id.PLAYLISTS, true),
 				NavbarTab(NavbarTab.Id.LIBRARY, true),
-				NavbarTab(NavbarTab.Id.IMPORT, true),
+				NavbarTab(NavbarTab.Id.IMPORT, false),
 				NavbarTab(NavbarTab.Id.FRIENDS, true),
 				NavbarTab(NavbarTab.Id.ALBUMS, false),
 				NavbarTab(NavbarTab.Id.ARTISTS, false),

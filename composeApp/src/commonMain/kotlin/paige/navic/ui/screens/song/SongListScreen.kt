@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +24,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import kotlinx.coroutines.delay
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.title_songs
 import org.jetbrains.compose.resources.stringResource
@@ -76,6 +78,9 @@ fun SongListScreen(
 	val starred by viewModel.starred.collectAsStateWithLifecycle()
 	val selectedSongRating by viewModel.selectedSongRating.collectAsStateWithLifecycle()
 	val allDownloads by viewModel.allDownloads.collectAsStateWithLifecycle()
+	val outside by viewModel.outside.collectAsStateWithLifecycle()
+	val outsideLoading by viewModel.outsideLoading.collectAsStateWithLifecycle()
+	val playingUrl by viewModel.playingUrl.collectAsStateWithLifecycle()
 
 	var shareId by remember { mutableStateOf<String?>(null) }
 	var shareExpiry by remember { mutableStateOf<Duration?>(null) }
@@ -92,6 +97,12 @@ fun SongListScreen(
 				|| it.artistName.contains(q, ignoreCase = true)
 				|| it.albumTitle?.contains(q, ignoreCase = true) == true
 		}
+	}
+
+	// ...and, once typing pauses, outside it (YouTube Music + YouTube), so one search finds everything.
+	LaunchedEffect(query) {
+		delay(300)
+		viewModel.searchOutside(query.trim())
 	}
 
 	val actions: @Composable RowScope.() -> Unit = {
@@ -149,6 +160,10 @@ fun SongListScreen(
 					songs = filteredSongs,
 					query = query,
 					onQueryChange = { query = it },
+					outside = outside,
+					outsideLoading = outsideLoading,
+					playingUrl = playingUrl,
+					onPlayOutside = { result -> viewModel.playOutside(result) { player.playNow(it) } },
 					onPlayAll = { player.playNow(filteredSongs) },
 					onShuffleAll = { player.playNow(filteredSongs.shuffled()) },
 					selectedSongIsStarred = starred,

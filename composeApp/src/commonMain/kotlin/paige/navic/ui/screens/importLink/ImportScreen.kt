@@ -362,7 +362,7 @@ fun ImportScreen(initialText: String?, nested: Boolean = true) {
 	}
 }
 
-private val SOURCE_LABELS = mapOf(
+internal val SOURCE_LABELS = mapOf(
 	"ytmusic" to "YouTube Music",
 	"youtube" to "YouTube",
 	"spotify" to "Spotify",

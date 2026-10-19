@@ -31,6 +31,12 @@ class SongRepository(
 		return songDao.getAllSongs().map { it.toDomainModel() }
 	}
 
+	/** Local songs for [ids], in [ids]' order; ids not in the local library are skipped. */
+	suspend fun getSongsByIds(ids: List<String>): List<DomainSong> {
+		val byId = songDao.getSongsByIds(ids).associateBy { it.songId }
+		return ids.mapNotNull { byId[it]?.toDomainModel() }
+	}
+
 	suspend fun getRandomSongs(count: Int): List<DomainSong> {
 		return songDao.getRandomSongs(count).map { it.toDomainModel() }
 	}
