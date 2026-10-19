@@ -150,7 +150,9 @@ class DbRepository(
 		progressCallback(1.0f, Res.string.info_syncing_finished)
 	}
 
+	/** [newest]: only that many most recently added albums (after an import), not the whole library. */
 	suspend fun syncLibrarySongs(
+		newest: Int? = null,
 		onProgress: (Float, StringResource) -> Unit = { _, _ -> }
 	): Result<Pair<Set<String>, Set<String>>> = runDbOp {
 		val pageSize = 500
@@ -159,11 +161,13 @@ class DbRepository(
 
 		onProgress(0.0f, Res.string.info_syncing_albums)
 		while (true) {
-			val batch =
+			val batch = if (newest != null)
+				sessionManager.api.getAlbums(ApiAlbumListType.Newest, newest, 0)
+			else
 				sessionManager.api.getAlbums(ApiAlbumListType.AlphabeticalByName, pageSize, offset)
 			if (batch.isEmpty()) break
 			allAlbumSummaries.addAll(batch)
-			if (batch.size < pageSize) break
+			if (newest != null || batch.size < pageSize) break
 			offset += pageSize
 		}
 

@@ -14,11 +14,19 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.encodeUtf8
+import paige.navic.domain.repositories.DbRepository
 import kotlin.random.Random
 
 @Serializable
@@ -63,9 +71,16 @@ private data class ErrorResponse(val error: String)
  * Talks to the MusicBox importer mounted at `<server>/musicbox/` (homelab-only, not part of
  * Navidrome), authenticated with the same Subsonic token auth the app already uses.
  */
-class ImportManager(private val settings: Settings) {
+class ImportManager(private val settings: Settings, private val dbRepository: DbRepository) {
 	/** Text shared into the app from another app (Android share sheet), consumed by App(). */
 	val pendingShare = MutableStateFlow<String?>(null)
+
+	/** Fires once imported or uploaded songs are in the local library, so song lists reload. */
+	val libraryChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+	// App-wide, not the Explore screen's: the import still lands if you switch tabs meanwhile.
+	private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+	private var watcher: Job? = null
 
 	private val client = HttpClient {
 		install(ContentNegotiation) {
@@ -114,6 +129,7 @@ class ImportManager(private val settings: Settings) {
 		if (res.status.value in listOf(400, 409, 411, 413))
 			throw IllegalStateException(runCatching { res.body<ErrorResponse>().error }.getOrNull() ?: "Upload failed")
 		res.check()
+		syncNewSongs() // the server replies once Navidrome has scanned the file
 	}
 
 	suspend fun submit(url: String) {
@@ -122,6 +138,29 @@ class ImportManager(private val settings: Settings) {
 			contentType(ContentType.Application.Json)
 			setBody(ImportRequest(url))
 		}.check()
+		watch()
+	}
+
+	/** Polls until the queued imports finish, pulling each finished one into the local library. */
+	private fun watch() {
+		if (watcher?.isActive == true) return
+		watcher = scope.launch {
+			val synced = runCatching { jobs() }.getOrDefault(emptyList()).filter { !it.isActive }.map { it.id }.toMutableSet()
+			while (true) {
+				delay(1_000)
+				val all = runCatching { jobs() }.getOrNull() ?: continue
+				val finished = all.filter { !it.isActive && it.id !in synced }
+				if (finished.any { it.status == "done" && it.itemsAdded > 0 }) syncNewSongs()
+				synced += finished.map { it.id }
+				if (all.none { it.isActive }) break
+			}
+		}
+	}
+
+	/** A "done" job is already scanned by Navidrome, so only the newest albums need fetching. */
+	private suspend fun syncNewSongs() {
+		dbRepository.syncLibrarySongs(newest = 10)
+		libraryChanged.tryEmit(Unit)
 	}
 
 	companion object {

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.DownloadManager
+import paige.navic.domain.manager.ImportManager
 import paige.navic.domain.manager.SessionManager
 import paige.navic.domain.models.DomainSong
 import paige.navic.domain.models.DomainSongListType
@@ -22,7 +23,8 @@ class SongListViewModel(
 	private val repository: SongRepository,
 	private val downloadManager: DownloadManager,
 	private val sessionManager: SessionManager,
-	connectivityManager: ConnectivityManager
+	connectivityManager: ConnectivityManager,
+	importManager: ImportManager
 ) : ViewModel() {
 	val songsState: StateFlow<UiState<ImmutableList<DomainSong>>>
 		field = MutableStateFlow<UiState<ImmutableList<DomainSong>>>(UiState.Loading())
@@ -54,6 +56,9 @@ class SongListViewModel(
 	init {
 		viewModelScope.launch {
 			sessionManager.isLoggedIn.collect { if (it) refreshSongs(false) }
+		}
+		viewModelScope.launch {
+			importManager.libraryChanged.collect { refreshSongs(false) }
 		}
 	}
 
