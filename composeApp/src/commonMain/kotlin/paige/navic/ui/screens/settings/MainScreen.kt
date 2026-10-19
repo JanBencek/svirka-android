@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.subtitle_about
 import navic.composeapp.generated.resources.subtitle_appearance
+import navic.composeapp.generated.resources.subtitle_change_password
 import navic.composeapp.generated.resources.subtitle_bottom_app_bar
 import navic.composeapp.generated.resources.subtitle_data_storage
 import navic.composeapp.generated.resources.subtitle_developer
@@ -37,6 +38,7 @@ import navic.composeapp.generated.resources.subtitle_now_playing
 import navic.composeapp.generated.resources.subtitle_playback
 import navic.composeapp.generated.resources.title_about
 import navic.composeapp.generated.resources.title_appearance
+import navic.composeapp.generated.resources.title_change_password
 import navic.composeapp.generated.resources.title_bottom_app_bar
 import navic.composeapp.generated.resources.title_data_storage
 import navic.composeapp.generated.resources.title_developer
@@ -58,11 +60,13 @@ import paige.navic.icons.outlined.ChevronForward
 import paige.navic.icons.outlined.Code
 import paige.navic.icons.outlined.DataTable
 import paige.navic.icons.outlined.Feedback
+import paige.navic.icons.outlined.Lock
 import paige.navic.icons.outlined.Note
 import paige.navic.ui.components.common.Form
 import paige.navic.ui.components.common.FormRow
 import paige.navic.ui.components.layouts.NestedTopBar
 import paige.navic.ui.navigation.Screen
+import paige.navic.ui.svirka.ChangePasswordDialog
 import paige.navic.ui.svirka.FeedbackDialog
 import paige.navic.ui.theme.defaultFont
 
@@ -70,6 +74,8 @@ import paige.navic.ui.theme.defaultFont
 fun SettingsScreen() {
 	var showFeedback by remember { mutableStateOf(false) }
 	if (showFeedback) FeedbackDialog { showFeedback = false }
+	var showChangePassword by remember { mutableStateOf(false) }
+	if (showChangePassword) ChangePasswordDialog { showChangePassword = false }
 	Scaffold(
 		topBar = { NestedTopBar({ Text(stringResource(Res.string.title_settings)) }) }
 	) { innerPadding ->
@@ -129,6 +135,12 @@ fun SettingsScreen() {
 					title = Res.string.title_feedback,
 					subtitle = Res.string.subtitle_feedback,
 					onClick = { showFeedback = true }
+				)
+				PageRow(
+					icon = Icons.Outlined.Lock,
+					title = Res.string.title_change_password,
+					subtitle = Res.string.subtitle_change_password,
+					onClick = { showChangePassword = true }
 				)
 				PageRow(
 					destination = Screen.Settings.About,

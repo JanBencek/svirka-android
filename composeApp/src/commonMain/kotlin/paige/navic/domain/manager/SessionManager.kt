@@ -24,6 +24,10 @@ class SessionManager(
 	)
 		private set
 
+	/** Bumped when [api] is rebuilt with new credentials: queued stream URLs carry the old token. */
+	val apiChanges: StateFlow<Int>
+		field = MutableStateFlow(0)
+
 	init {
 		isLoggedIn.value = settings.getStringOrNull("username") != null
 	}
@@ -89,6 +93,7 @@ class SessionManager(
 			username = settings.getString("username", ""),
 			password = settings.getString("password", ""),
 		)
+		apiChanges.value++
 	}
 
 	fun getCoverArtUrl(coverArtId: String, size: Int? = null) = api.getCoverArtUrl(

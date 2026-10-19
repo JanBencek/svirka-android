@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Svirka-only strings: Connect, Friends and Jam (ConnectManager, DevicesSheet, FriendsScreen), feedback, self-update. Separate file so upstream strings.xml merges stay clean. -->
+<!-- Svirka-only strings: Connect, Friends and Jam (ConnectManager, DevicesSheet, FriendsScreen), feedback, password, self-update. Separate file so upstream strings.xml merges stay clean. -->
 <resources>
 	<string name="connect_devices">Devices</string>
 	<string name="connect_play_on">Play on</string>
@@ -24,4 +24,13 @@
 	<string name="feedback_sent">Thanks for the feedback!</string>
 	<string name="feedback_error">Couldn\'t send feedback. Try again later.</string>
 	<string name="info_downloading_update">Downloading… %1$s</string>
+	<string name="title_change_password">Change password</string>
+	<string name="subtitle_change_password">Your Svirka password</string>
+	<string name="password_current">Current password</string>
+	<string name="password_new">New password</string>
+	<string name="password_repeat">Repeat new password</string>
+	<string name="password_too_short">At least 8 characters</string>
+	<string name="password_mismatch">Passwords don\'t match</string>
+	<string name="password_changed">Password changed</string>
+	<string name="password_error">Couldn\'t change the password. Try again later.</string>
 </resources>

@@ -492,7 +492,8 @@ class AndroidMediaPlayerViewModel(
 					snapshotFlow { preferenceManager.customMaxBitrateWifi },
 					snapshotFlow { preferenceManager.customMaxBitrateCellular },
 					snapshotFlow { preferenceManager.customFormatWifi },
-					snapshotFlow { preferenceManager.customFormatCellular }
+					snapshotFlow { preferenceManager.customFormatCellular },
+					sessionManager.apiChanges
 				) { it }.collectLatest { args ->
 					@Suppress("UNCHECKED_CAST")
 					val downloadedMap = args[0] as Map<String, String>

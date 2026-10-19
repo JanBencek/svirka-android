@@ -114,6 +114,9 @@ private data class JamInvite(val id: String, val from: String, val host: String)
 private data class JamResponse(val jam: JamView? = null, val error: String? = null)
 
 @Serializable
+private data class ApiError(val error: String? = null)
+
+@Serializable
 private data class FollowBody(val user: String, val follow: Boolean)
 
 @Serializable
@@ -208,6 +211,25 @@ class ConnectManager(
 				put("version", version)
 			})
 		}.status.isSuccess()
+	}
+
+	/**
+	 * Svirka password change (Settings). Null when changed: the stored login switches to [password] right away
+	 * (callers rebuild the Subsonic client); otherwise the server's reason, or "" when it gave none.
+	 */
+	suspend fun changePassword(current: String, password: String): String? {
+		awaitAuth()
+		val res = client.post("$base/api/auth/password?$auth") {
+			contentType(ContentType.Application.Json)
+			setBody(buildJsonObject {
+				put("current", current)
+				put("password", password)
+			})
+		}
+		if (!res.status.isSuccess()) return runCatching { res.body<ApiError>().error }.getOrNull().orEmpty()
+		settings["password"] = password
+		auth = tokenAuth(settings.getString("username", ""), password) // the open stream stays; reconnects use it too
+		return null
 	}
 
 	/* ---- Jam: listen along with friends, like Spotify Jam ---- */
@@ -338,9 +360,8 @@ class ConnectManager(
 				delay(10.seconds)
 				continue
 			}
-			val salt = Random.nextBytes(6).joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
 			base = url
-			auth = "u=${username.encodeURLParameter()}&t=${(password + salt).encodeUtf8().md5().hex()}&s=$salt"
+			auth = tokenAuth(username, password)
 			try {
 				client.sse(
 					"$base/api/connect?$auth&kind=phone&device=$deviceId&name=${deviceName.encodeURLParameter()}"
@@ -370,6 +391,12 @@ class ConnectManager(
 			delay(backoff.seconds)
 			backoff = (backoff * 2).coerceAtMost(60)
 		}
+	}
+
+	/** Subsonic token auth query: u, t = md5(password + salt), s. */
+	private fun tokenAuth(username: String, password: String): String {
+		val salt = Random.nextBytes(6).joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
+		return "u=${username.encodeURLParameter()}&t=${(password + salt).encodeUtf8().md5().hex()}&s=$salt"
 	}
 
 	private fun handle(c: ConnectCommand) {
