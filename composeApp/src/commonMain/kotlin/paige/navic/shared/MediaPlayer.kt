@@ -59,6 +59,7 @@ abstract class MediaPlayerViewModel(
 	abstract fun playAt(index: Int)
 	abstract fun playNextSingle(song: DomainSong)
 	abstract fun playNext(collection: DomainSongCollection)
+	abstract fun playNext(songs: List<DomainSong>, notify: Boolean = true)
 	abstract fun playRadio(radio: DomainRadio)
 	abstract fun pause()
 	abstract fun resume()
@@ -130,10 +131,10 @@ abstract class MediaPlayerViewModel(
 		return true
 	}
 
-	/** True when [songs] went to the Jam host's queue instead of this player. */
-	protected fun addToJam(songs: List<DomainSong>): Boolean {
+	/** True when [songs] went to the Jam host's queue (right after the current song when [next]) instead of this player. */
+	protected fun addToJam(songs: List<DomainSong>, next: Boolean = false): Boolean {
 		val jam = jam ?: return false
-		jam.jamAdd(songs)
+		jam.jamAdd(songs, next)
 		return true
 	}
 

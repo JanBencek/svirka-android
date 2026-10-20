@@ -883,7 +883,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun playNextSingle(song: DomainSong) {
-		if (addToJam(listOf(song))) return
+		if (addToJam(listOf(song), next = true)) return
 		viewModelScope.launch {
 			controller?.addMediaItem(
 				_uiState.value.currentIndex + 1,
@@ -905,34 +905,34 @@ class AndroidMediaPlayerViewModel(
 		}
 	}
 
-	override fun playNext(collection: DomainSongCollection) {
-		if (addToJam(collection.songs)) return
+	override fun playNext(collection: DomainSongCollection) = playNext(
+		if (collection is DomainAlbum) collection.songs.sortedWith(
+			compareBy(
+				{ it.discNumber },
+				{ it.trackNumber }
+			)) else collection.songs
+	)
+
+	override fun playNext(songs: List<DomainSong>, notify: Boolean) {
+		if (addToJam(songs, next = true)) return
 		viewModelScope.launch {
-			val (items, newCollection) = withContext(Dispatchers.Default) {
-				val newCollection =
-					if (collection is DomainAlbum) collection.songs.sortedWith(
-						compareBy(
-							{ it.discNumber },
-							{ it.trackNumber }
-						)) else collection.songs
-				newCollection.map { it.toMediaItem() } to newCollection
-			}
+			val items = withContext(Dispatchers.Default) { songs.map { it.toMediaItem() } }
 			controller?.addMediaItems(_uiState.value.currentIndex + 1, items)
 			_uiState.update { state ->
 				val newQueue =
 					if (state.queue.isEmpty())
-						state.queue + newCollection
+						state.queue + songs
 					else
-						state.queue.slice(0..state.currentIndex) + newCollection + state.queue.slice(
+						state.queue.slice(0..state.currentIndex) + songs + state.queue.slice(
 							state.currentIndex + 1..<state.queue.size
 						)
 				state.copy(
 					queue = newQueue,
 					currentIndex = if (state.currentIndex == -1) 0 else state.currentIndex,
-					currentSong = if (state.currentIndex == -1) newCollection.firstOrNull() else state.currentSong
+					currentSong = if (state.currentIndex == -1) songs.firstOrNull() else state.currentSong
 				)
 			}
-			snackBarManager.notifyPlayNext()
+			if (notify) snackBarManager.notifyPlayNext()
 		}
 	}
 

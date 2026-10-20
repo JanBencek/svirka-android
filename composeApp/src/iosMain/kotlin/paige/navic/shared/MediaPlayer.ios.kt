@@ -264,27 +264,30 @@ class IOSMediaPlayerViewModel(
 		snackBarManager.notifyPlayNext()
 	}
 
-	override fun playNext(collection: DomainSongCollection) {
-		val newCollection = if (collection is DomainAlbum) collection.songs.sortedWith(
+	override fun playNext(collection: DomainSongCollection) = playNext(
+		if (collection is DomainAlbum) collection.songs.sortedWith(
 			compareBy(
 			{ it.discNumber },
 			{ it.trackNumber }
 		)) else collection.songs
+	)
+
+	override fun playNext(songs: List<DomainSong>, notify: Boolean) {
 		_uiState.update { state ->
 			val newQueue =
 				if (state.queue.isEmpty())
-					state.queue + newCollection
+					state.queue + songs
 				else
-					state.queue.slice(0..state.currentIndex) + newCollection + state.queue.slice(
+					state.queue.slice(0..state.currentIndex) + songs + state.queue.slice(
 						state.currentIndex + 1..<state.queue.size
 					)
 			state.copy(
 				queue = newQueue,
 				currentIndex = if (state.currentIndex == -1) 0 else state.currentIndex,
-				currentSong = if (state.currentIndex == -1) newCollection.firstOrNull() else state.currentSong
+				currentSong = if (state.currentIndex == -1) songs.firstOrNull() else state.currentSong
 			)
 		}
-		snackBarManager.notifyPlayNext()
+		if (notify) snackBarManager.notifyPlayNext()
 	}
 
 	override fun playRadio(radio: DomainRadio) {

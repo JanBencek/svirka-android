@@ -132,8 +132,9 @@ private data class ConnectCommand(
 	val cmd: String,
 	val value: Double? = null,
 	val state: ConnectState? = null,
-	val songs: List<ConnectSong>? = null, // enqueue: a Jam guest (`from`) added these
-	val from: String? = null
+	val songs: List<ConnectSong>? = null, // enqueue: a Jam guest (`from`) added these, to play next when `next`
+	val from: String? = null,
+	val next: Boolean = false
 )
 
 @Serializable
@@ -277,10 +278,11 @@ class ConnectManager(
 	}
 
 	/** While this phone plays along: what the user plays or queues is added to the host's queue. */
-	fun jamAdd(songs: List<DomainSong>) {
+	fun jamAdd(songs: List<DomainSong>, next: Boolean = false) {
 		if (songs.isEmpty()) return
 		jamAction("add", onDone = { snackBar.notify(Res.string.jam_added) }) {
 			put("songs", json.encodeToJsonElement(songs.take(200).map { it.toConnect() }))
+			if (next) put("next", true)
 		}
 	}
 
@@ -429,7 +431,7 @@ class ConnectManager(
 			"volume" -> c.value?.let { player.setVolume(it.toFloat()) }
 			"skipTo" -> c.value?.let { player.playAt(it.toInt()) }
 			"load" -> c.state?.let { scope.launch { load(it) } }
-			"enqueue" -> scope.launch { enqueue(c.songs.orEmpty(), c.from.orEmpty()) }
+			"enqueue" -> scope.launch { enqueue(c.songs.orEmpty(), c.from.orEmpty(), c.next) }
 		}
 	}
 
@@ -475,10 +477,11 @@ class ConnectManager(
 	}
 
 	/** Hosting a Jam: a guest added [added] to our queue. */
-	private suspend fun enqueue(added: List<ConnectSong>, from: String) {
+	private suspend fun enqueue(added: List<ConnectSong>, from: String, next: Boolean) {
 		val songs = added.mapNotNull { collections.getSongById(it.id) }
 		if (songs.isEmpty()) return
-		player.addToQueue(songs, notify = false)
+		if (next) player.playNext(songs, notify = false)
+		else player.addToQueue(songs, notify = false)
 		val title = added.first().title + if (added.size > 1) " +${added.size - 1}" else ""
 		snackBar.notify(Res.string.jam_enqueued, from, title)
 	}
