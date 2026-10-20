@@ -8,12 +8,14 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.client.plugins.sse.sse
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.encodeURLParameter
+import io.ktor.http.encodeURLPathPart
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CancellationException
@@ -115,6 +117,9 @@ private data class JamResponse(val jam: JamView? = null, val error: String? = nu
 
 @Serializable
 private data class ApiError(val error: String? = null)
+
+@Serializable
+private data class Me(val admin: Boolean = false)
 
 @Serializable
 private data class FollowBody(val user: String, val follow: Boolean)
@@ -230,6 +235,21 @@ class ConnectManager(
 		settings["password"] = password
 		auth = tokenAuth(settings.getString("username", ""), password) // the open stream stays; reconnects use it too
 		return null
+	}
+
+	/** Navidrome admin (the server owner): may delete songs from the library. False when unsure. */
+	suspend fun isAdmin(): Boolean {
+		awaitAuth()
+		val res = client.get("$base/api/auth/me?$auth")
+		return res.status.isSuccess() && runCatching { res.body<Me>().admin }.getOrDefault(false)
+	}
+
+	/** Deletes the song's file from the library (admin only). Null when deleted, otherwise the server's reason or "". */
+	suspend fun deleteSong(songId: String): String? {
+		awaitAuth()
+		val res = client.delete("$base/api/library/songs/${songId.encodeURLPathPart()}?$auth")
+		if (res.status.isSuccess()) return null
+		return runCatching { res.body<ApiError>().error }.getOrNull().orEmpty()
 	}
 
 	/* ---- Jam: listen along with friends, like Spotify Jam ---- */

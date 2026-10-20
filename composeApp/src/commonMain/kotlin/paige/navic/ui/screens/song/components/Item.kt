@@ -63,6 +63,7 @@ fun SongListScreenItem(
 	onDownload: () -> Unit,
 	onCancelDownload: () -> Unit,
 	onDeleteDownload: () -> Unit,
+	onDeleteFromLibrary: (() -> Unit)? = null,
 ) {
 	val backStack = LocalNavStack.current
 	var playlistDialogShown by rememberSaveable { mutableStateOf(false) }
@@ -169,7 +170,8 @@ fun SongListScreenItem(
 					downloadStatus = download?.status ?: DownloadStatus.NOT_DOWNLOADED,
 					onDownload = onDownload,
 					onCancelDownload = onCancelDownload,
-					onDeleteDownload = onDeleteDownload
+					onDeleteDownload = onDeleteDownload,
+					onDeleteFromLibrary = onDeleteFromLibrary
 				)
 			}
 		}

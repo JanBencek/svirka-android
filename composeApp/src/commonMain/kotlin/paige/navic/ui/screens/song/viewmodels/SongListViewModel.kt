@@ -117,6 +117,14 @@ class SongListViewModel(
 		}
 	}
 
+	/** The song was deleted on the server: drop it here too. */
+	fun removeDeletedSong(song: DomainSong) {
+		viewModelScope.launch {
+			repository.removeLocalSong(song)
+			refreshSongs(false)
+		}
+	}
+
 	fun selectSong(song: DomainSong) {
 		viewModelScope.launch {
 			selectedSong.value = song

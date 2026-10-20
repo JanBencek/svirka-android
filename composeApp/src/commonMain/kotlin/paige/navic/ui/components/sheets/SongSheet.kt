@@ -34,6 +34,7 @@ import navic.composeapp.generated.resources.action_add_to_playlist
 import navic.composeapp.generated.resources.action_add_to_queue
 import navic.composeapp.generated.resources.action_cancel_download
 import navic.composeapp.generated.resources.action_delete_download
+import navic.composeapp.generated.resources.action_delete_from_library
 import navic.composeapp.generated.resources.action_download
 import navic.composeapp.generated.resources.action_play_next
 import navic.composeapp.generated.resources.action_remove_from_playlist
@@ -102,6 +103,8 @@ fun SongSheet(
 	onViewArtist: (() -> Unit)? = null,
 	onAddToPlaylist: (() -> Unit)? = null,
 	onRemoveFromPlaylist: (() -> Unit)? = null,
+	/** Svirka: deletes the file from the server's library; only passed for the admin. */
+	onDeleteFromLibrary: (() -> Unit)? = null,
 	downloadStatus: DownloadStatus? = null,
 	onDownload: (() -> Unit)? = null,
 	onCancelDownload: (() -> Unit)? = null,
@@ -362,6 +365,19 @@ fun SongSheet(
 						leadingContent = { Icon(Icons.Outlined.PlaylistRemove, null) },
 						onClick = {
 							onRemoveFromPlaylist()
+							onDismissRequest()
+						},
+						colors = colors,
+						contentPadding = contentPadding
+					)
+				}
+
+				if (onDeleteFromLibrary != null) {
+					ListItem(
+						content = { Text(stringResource(Res.string.action_delete_from_library)) },
+						leadingContent = { Icon(Icons.Outlined.Delete, null) },
+						onClick = {
+							onDeleteFromLibrary()
 							onDismissRequest()
 						},
 						colors = colors,

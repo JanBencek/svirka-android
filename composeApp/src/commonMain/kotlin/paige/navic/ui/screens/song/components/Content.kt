@@ -71,7 +71,8 @@ fun LazyListScope.songListScreenContent(
 	onSetRating: (Int) -> Unit,
 	onDownload: (DomainSong) -> Unit,
 	onCancelDownload: (DomainSong) -> Unit,
-	onDeleteDownload: (DomainSong) -> Unit
+	onDeleteDownload: (DomainSong) -> Unit,
+	onDeleteFromLibrary: ((DomainSong) -> Unit)?
 ) {
 	if (state.data.isNullOrEmpty() && state is UiState.Loading) return
 
@@ -124,7 +125,8 @@ fun LazyListScope.songListScreenContent(
 			download = download,
 			onDownload = { onDownload(song) },
 			onCancelDownload = { onCancelDownload(song) },
-			onDeleteDownload = { onDeleteDownload(song) }
+			onDeleteDownload = { onDeleteDownload(song) },
+			onDeleteFromLibrary = onDeleteFromLibrary?.let { delete -> { delete(song) } }
 		)
 	}
 

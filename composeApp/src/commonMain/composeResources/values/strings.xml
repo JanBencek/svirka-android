@@ -306,6 +306,9 @@
 	<string name="action_remove_star">Unstar</string>
 	<string name="action_download">Download</string>
 	<string name="action_delete_download">Delete download</string>
+	<string name="action_delete_from_library">Delete from library</string>
+	<string name="title_delete_song">Delete this song from the library?</string>
+	<string name="notice_deleted_song">Deleted from the library</string>
 	<string name="action_cancel_download">Cancel download</string>
 	<string name="action_sleep_timer">Sleep timer</string>
 	<string name="action_sleep_timer_enabled">Sleep timer - %1$s left </string>

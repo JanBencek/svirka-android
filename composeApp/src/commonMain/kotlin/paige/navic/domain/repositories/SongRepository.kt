@@ -37,6 +37,9 @@ class SongRepository(
 		return ids.mapNotNull { byId[it]?.toDomainModel() }
 	}
 
+	/** Drops a song deleted on the server from the local library. */
+	suspend fun removeLocalSong(song: DomainSong) = songDao.deleteSong(song.id)
+
 	suspend fun getRandomSongs(count: Int): List<DomainSong> {
 		return songDao.getRandomSongs(count).map { it.toDomainModel() }
 	}
