@@ -195,6 +195,9 @@ fun SongListScreen(
 					outsideLoading = outsideLoading,
 					playingUrl = playingUrl,
 					onPlayOutside = { result -> viewModel.playOutside(result) { player.playNow(it) } },
+					onQueueOutside = { result, next ->
+						viewModel.playOutside(result, queued = true) { if (next) player.playNext(it) else player.addToQueue(it) }
+					},
 					onPlayAll = { player.playNow(filteredSongs) },
 					onShuffleAll = { player.playNow(filteredSongs.shuffled()) },
 					selectedSongIsStarred = starred,

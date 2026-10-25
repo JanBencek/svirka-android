@@ -1,7 +1,7 @@
 package paige.navic.ui.screens.song.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +19,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,9 +32,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import kotlinx.collections.immutable.ImmutableList
+import navic.composeapp.generated.resources.Res
+import navic.composeapp.generated.resources.action_add_to_queue
+import navic.composeapp.generated.resources.action_play_next
+import org.jetbrains.compose.resources.stringResource
 import paige.navic.data.database.entities.DownloadEntity
 import paige.navic.domain.manager.ExploreResult
 import paige.navic.domain.models.DomainSong
+import paige.navic.icons.Icons
+import paige.navic.icons.outlined.Queue
+import paige.navic.icons.outlined.QueuePlayNext
+import paige.navic.ui.components.common.Dropdown
+import paige.navic.ui.components.common.DropdownItem
 import paige.navic.ui.core.UiState
 import paige.navic.ui.screens.importLink.SOURCE_LABELS
 import paige.navic.ui.svirka.SvirkaEmptyState
@@ -43,7 +56,8 @@ import paige.navic.ui.svirka.mutedColor
 
 /**
  * Svirka home: search field + Play/Shuffle header, then the (filtered) song rows, then the same
- * search outside the library ([outside]) — tapping one of those imports it and plays it.
+ * search outside the library ([outside]) — tapping one of those imports it and plays it; long-press
+ * queues it instead (Play next / Add to queue), once it's imported.
  * [songs] is [state]'s list already filtered by [query].
  */
 fun LazyListScope.songListScreenContent(
@@ -55,6 +69,7 @@ fun LazyListScope.songListScreenContent(
 	outsideLoading: Boolean,
 	playingUrl: String?,
 	onPlayOutside: (ExploreResult) -> Unit,
+	onQueueOutside: (ExploreResult, next: Boolean) -> Unit,
 	onPlayAll: () -> Unit,
 	onShuffleAll: () -> Unit,
 	selectedSong: DomainSong?,
@@ -157,17 +172,25 @@ fun LazyListScope.songListScreenContent(
 			result = result,
 			busy = playingUrl == result.url,
 			enabled = playingUrl == null,
-			onClick = { onPlayOutside(result) }
+			onClick = { onPlayOutside(result) },
+			onQueue = { next -> onQueueOutside(result, next) }
 		)
 	}
 }
 
 @Composable
-private fun OutsideResultRow(result: ExploreResult, busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun OutsideResultRow(
+	result: ExploreResult,
+	busy: Boolean,
+	enabled: Boolean,
+	onClick: () -> Unit,
+	onQueue: (next: Boolean) -> Unit
+) {
+	var menuShown by remember { mutableStateOf(false) }
 	Row(
 		modifier = Modifier
 			.fillMaxWidth()
-			.clickable(enabled = enabled, onClick = onClick)
+			.combinedClickable(enabled = enabled, onClick = onClick, onLongClick = { menuShown = true })
 			.padding(horizontal = 16.dp, vertical = 6.dp),
 		verticalAlignment = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -188,6 +211,18 @@ private fun OutsideResultRow(result: ExploreResult, busy: Boolean, enabled: Bool
 			}
 		}
 		Column(Modifier.weight(1f)) {
+			Dropdown(expanded = menuShown, onDismissRequest = { menuShown = false }) {
+				DropdownItem(
+					text = { Text(stringResource(Res.string.action_play_next)) },
+					leadingIcon = { Icon(Icons.Outlined.QueuePlayNext, null) },
+					onClick = { menuShown = false; onQueue(true) }
+				)
+				DropdownItem(
+					text = { Text(stringResource(Res.string.action_add_to_queue)) },
+					leadingIcon = { Icon(Icons.Outlined.Queue, null) },
+					onClick = { menuShown = false; onQueue(false) }
+				)
+			}
 			Text(
 				text = result.title ?: result.url,
 				style = SvirkaText.RowTitle,

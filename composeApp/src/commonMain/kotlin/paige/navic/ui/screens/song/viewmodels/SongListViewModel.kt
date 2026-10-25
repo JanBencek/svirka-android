@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import navic.composeapp.generated.resources.Res
+import navic.composeapp.generated.resources.notice_import_joins_queue
 import navic.composeapp.generated.resources.notice_play_import_failed
 import paige.navic.domain.manager.ConnectivityManager
 import paige.navic.domain.manager.DownloadManager
@@ -99,10 +100,15 @@ class SongListViewModel(
 		}
 	}
 
-	/** Tap = play: imported first (a few seconds), then handed to [play]; it shows up in Songs too. */
-	fun playOutside(result: ExploreResult, play: (List<DomainSong>) -> Unit) {
+	/**
+	 * Tap = play, long-press = queue ([queued]): imported first (a few seconds), then handed to [play];
+	 * it shows up in Songs too.
+	 */
+	fun playOutside(result: ExploreResult, queued: Boolean = false, play: (List<DomainSong>) -> Unit) {
 		if (playingUrl.value != null) return
 		playingUrl.value = result.url
+		// ponytail: lands when the import finishes, so songs queued meanwhile can end up ahead of it
+		if (queued) snackBarManager.notify(Res.string.notice_import_joins_queue)
 		viewModelScope.launch {
 			try {
 				val songs = repository.getSongsByIds(importManager.importForPlay(result.url))

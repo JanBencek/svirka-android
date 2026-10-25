@@ -27,6 +27,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaController
@@ -79,6 +80,42 @@ import java.io.File
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import coil3.PlatformContext as CoilPlatformContext
+
+/**
+ * Shuffle that keeps Play next working: songs inserted into the queue play right after the song
+ * before them in the queue (the current one, for Play next), not at random spots like
+ * DefaultShuffleOrder puts them. A fresh queue is shuffled as usual.
+ * [shuffled] is the play order: queue indices.
+ */
+@OptIn(UnstableApi::class)
+private class QueueShuffleOrder(private val shuffled: IntArray = IntArray(0)) : ShuffleOrder {
+	private val positions = IntArray(shuffled.size).also { p -> shuffled.forEachIndexed { pos, i -> p[i] = pos } }
+
+	override fun getLength() = shuffled.size
+	override fun getNextIndex(index: Int) = shuffled.getOrElse(positions[index] + 1) { C.INDEX_UNSET }
+	override fun getPreviousIndex(index: Int) = shuffled.getOrElse(positions[index] - 1) { C.INDEX_UNSET }
+	override fun getLastIndex() = shuffled.lastOrNull() ?: C.INDEX_UNSET
+	override fun getFirstIndex() = shuffled.firstOrNull() ?: C.INDEX_UNSET
+
+	override fun cloneAndInsert(insertionIndex: Int, insertionCount: Int): ShuffleOrder {
+		val added = (insertionIndex until insertionIndex + insertionCount).toList()
+		if (shuffled.isEmpty()) return QueueShuffleOrder(added.shuffled().toIntArray())
+		val shifted = shuffled.map { if (it >= insertionIndex) it + insertionCount else it }
+		val at = if (insertionIndex == 0) 0 else positions[insertionIndex - 1] + 1
+		return QueueShuffleOrder((shifted.take(at) + added + shifted.drop(at)).toIntArray())
+	}
+
+	override fun cloneAndRemove(indexFrom: Int, indexToExclusive: Int): ShuffleOrder {
+		val count = indexToExclusive - indexFrom
+		return QueueShuffleOrder(
+			shuffled.filter { it < indexFrom || it >= indexToExclusive }
+				.map { if (it >= indexToExclusive) it - count else it }
+				.toIntArray()
+		)
+	}
+
+	override fun cloneAndClear(): ShuffleOrder = QueueShuffleOrder()
+}
 
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaSessionService(), KoinComponent {
@@ -135,6 +172,7 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 					true
 				)
 				setMediaNotificationProvider(notificationProvider)
+				setShuffleOrder(QueueShuffleOrder())
 				trackSelectionParameters =
 					trackSelectionParameters.buildUpon().setAudioOffloadPreferences(
 						TrackSelectionParameters.AudioOffloadPreferences
