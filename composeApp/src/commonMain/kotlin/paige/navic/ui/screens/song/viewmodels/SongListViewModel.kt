@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.notice_import_joins_queue
@@ -68,9 +69,12 @@ class SongListViewModel(
 	val outsideLoading: StateFlow<Boolean>
 		field = MutableStateFlow(false)
 
-	/** The outside result being imported to play, if any. */
-	val playingUrl: StateFlow<String?>
-		field = MutableStateFlow<String?>(null)
+	/** The outside results being imported to play or queue. */
+	val busyUrls: StateFlow<Set<String>>
+		field = MutableStateFlow(emptySet<String>())
+
+	/** The last queued outside result: the next one lands after it, so they queue in the order picked. */
+	private var landing: Job? = null
 
 	private var outsideJob: Job? = null
 
@@ -105,22 +109,26 @@ class SongListViewModel(
 	 * it shows up in Songs too.
 	 */
 	fun playOutside(result: ExploreResult, queued: Boolean = false, play: (List<DomainSong>) -> Unit) {
-		if (playingUrl.value != null) return
-		playingUrl.value = result.url
-		// ponytail: lands when the import finishes, so songs queued meanwhile can end up ahead of it
+		if (result.url in busyUrls.value) return
+		busyUrls.update { it + result.url }
+		// ponytail: lands when the import finishes, so library songs queued meanwhile can end up ahead of it
 		if (queued) snackBarManager.notify(Res.string.notice_import_joins_queue)
-		viewModelScope.launch {
+		val before = if (queued) landing else null
+		val job = viewModelScope.launch {
 			try {
-				val songs = repository.getSongsByIds(importManager.importForPlay(result.url))
+				val ids = importManager.importForPlay(result.url) // side by side with the others
+				before?.join()
+				val songs = repository.getSongsByIds(ids)
 				if (songs.isNotEmpty()) play(songs)
 			} catch (e: CancellationException) {
 				throw e
 			} catch (_: Exception) {
 				snackBarManager.notify(Res.string.notice_play_import_failed)
 			} finally {
-				playingUrl.value = null
+				busyUrls.update { it - result.url }
 			}
 		}
+		if (queued) landing = job
 	}
 
 	/** The song was deleted on the server: drop it here too. */

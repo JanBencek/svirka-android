@@ -67,7 +67,7 @@ fun LazyListScope.songListScreenContent(
 	onQueryChange: (String) -> Unit,
 	outside: List<ExploreResult>?,
 	outsideLoading: Boolean,
-	playingUrl: String?,
+	busyUrls: Set<String>,
 	onPlayOutside: (ExploreResult) -> Unit,
 	onQueueOutside: (ExploreResult, next: Boolean) -> Unit,
 	onPlayAll: () -> Unit,
@@ -170,8 +170,8 @@ fun LazyListScope.songListScreenContent(
 	items(outside.orEmpty(), key = { "outside:" + it.url }) { result ->
 		OutsideResultRow(
 			result = result,
-			busy = playingUrl == result.url,
-			enabled = playingUrl == null,
+			busy = result.url in busyUrls,
+			enabled = result.url !in busyUrls,
 			onClick = { onPlayOutside(result) },
 			onQueue = { next -> onQueueOutside(result, next) }
 		)

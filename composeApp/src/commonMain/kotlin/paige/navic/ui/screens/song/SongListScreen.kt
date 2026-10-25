@@ -99,7 +99,7 @@ fun SongListScreen(
 	val allDownloads by viewModel.allDownloads.collectAsStateWithLifecycle()
 	val outside by viewModel.outside.collectAsStateWithLifecycle()
 	val outsideLoading by viewModel.outsideLoading.collectAsStateWithLifecycle()
-	val playingUrl by viewModel.playingUrl.collectAsStateWithLifecycle()
+	val busyUrls by viewModel.busyUrls.collectAsStateWithLifecycle()
 
 	var shareId by remember { mutableStateOf<String?>(null) }
 	var shareExpiry by remember { mutableStateOf<Duration?>(null) }
@@ -193,7 +193,7 @@ fun SongListScreen(
 					onQueryChange = { query = it },
 					outside = outside,
 					outsideLoading = outsideLoading,
-					playingUrl = playingUrl,
+					busyUrls = busyUrls,
 					onPlayOutside = { result -> viewModel.playOutside(result) { player.playNow(it) } },
 					onQueueOutside = { result, next ->
 						viewModel.playOutside(result, queued = true) { if (next) player.playNext(it) else player.addToQueue(it) }
