@@ -32,8 +32,8 @@ import paige.navic.icons.outlined.Close
 import paige.navic.icons.outlined.Delete
 import paige.navic.icons.outlined.DownloadOff
 import paige.navic.shared.MediaPlayerViewModel
+import paige.navic.ui.svirka.SvirkaHeroPlayRow
 import paige.navic.ui.svirka.SvirkaIcons
-import paige.navic.ui.svirka.SvirkaPlayShuffleRow
 import paige.navic.ui.svirka.mutedColor
 
 @Composable
@@ -51,14 +51,14 @@ fun CollectionDetailScreenHeadingRowButtons(
 
 	val hasSongs = collection.songs.isNotEmpty()
 
-	SvirkaPlayShuffleRow(
+	SvirkaHeroPlayRow(
 		onPlay = { player.playNow(collection) },
 		onShuffle = { player.shufflePlay(collection) },
 		enabled = hasSongs,
 		modifier = Modifier
 			.fillMaxWidth()
 			.padding(horizontal = 16.dp)
-			.padding(bottom = 24.dp)
+			.padding(bottom = 16.dp)
 	) {
 		IconButton(
 			modifier = Modifier.size(40.dp),

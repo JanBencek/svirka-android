@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -98,6 +99,7 @@ import paige.navic.ui.svirka.SvirkaLikeButton
 import paige.navic.ui.svirka.SvirkaShapes
 import paige.navic.ui.svirka.SvirkaText
 import paige.navic.ui.svirka.mutedColor
+import paige.navic.util.ui.rememberCoverColor
 import coil3.compose.LocalPlatformContext as LocalCoilPlatformContext
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
@@ -138,6 +140,11 @@ fun MiniPlayer(
 	}
 
 	val detached = preferenceManager.miniPlayerStyle == MiniPlayerStyle.Detached
+
+	// Svirka now-playing bar tint: a little of the cover's colour over the container, animated between songs
+	val containerColor = MaterialTheme.colorScheme.surfaceContainer
+	val coverColor = rememberCoverColor(song?.coverArtId, fallback = containerColor)
+	val tintedContainerColor = lerp(containerColor, coverColor, 0.22f)
 
 	val outerPadding = if (detached) 12.dp else 0.dp
 	val coverRounding by animateDpAsState(
@@ -221,7 +228,7 @@ fun MiniPlayer(
 				else PaddingValues(),
 				verticalAlignment = Alignment.CenterVertically,
 				colors = ListItemDefaults.colors(
-					containerColor = MaterialTheme.colorScheme.surfaceContainer
+					containerColor = tintedContainerColor
 				),
 				shapes = ListItemDefaults.shapes(
 					shape = shape,

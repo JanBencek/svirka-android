@@ -92,12 +92,14 @@ import paige.navic.ui.svirka.mutedColor
 import paige.navic.ui.theme.NavicTheme
 import paige.navic.util.core.isLandscape
 import paige.navic.util.ui.rememberColorSchemeFromCoverArt
+import paige.navic.util.ui.rememberCoverColor
 import kotlin.time.Duration
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ArtistDetailScreen(
-	artistId: String
+	artistId: String,
+	tab: String = "artists"
 ) {
 	val platformContext = LocalPlatformContext.current
 	val preferenceManager = koinInject<PreferenceManager>()
@@ -158,6 +160,9 @@ fun ArtistDetailScreen(
 	}
 
 	NavicTheme(colorScheme) {
+		val coverColor = rememberCoverColor(
+			artistState.data?.artist?.coverArtId ?: artistState.data?.albums?.firstOrNull()?.coverArtId
+		)
 		Scaffold(
 			topBar = {
 				ArtistDetailScreenTopBar(
@@ -226,13 +231,16 @@ fun ArtistDetailScreen(
 							verticalArrangement = Arrangement.spacedBy(24.dp)
 						) {
 							ArtistDetailScreenHeading(
+								artistId = state.artist.id,
+								tab = tab,
 								artistName = state.artist.name,
 								coverArtId = state.artist.coverArtId,
 								albumCount = state.albums.size,
 								subtitle = state.artist.biography,
 								lastfm = state.artist.lastFmUrl,
 								innerPadding = contentPadding,
-								scrolled = scrolled
+								scrolled = scrolled,
+								coverColor = coverColor
 							)
 							ArtistActionButtons(
 								onPlay = { viewModel.playArtistAlbums(player) },

@@ -14,7 +14,11 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -35,6 +39,15 @@ import paige.navic.ui.theme.NavicTheme
 import paige.navic.util.ui.LocalSheetState
 import paige.navic.util.ui.rememberColorSchemeForCurrentSong
 import paige.navic.util.ui.rememberScreenCornerRadius
+
+/**
+ * How far the Now Playing sheet is open, 0 (hidden) to 1 (expanded); read it in a draw-phase lambda
+ * (graphicsLayer) so following it doesn't recompose. 1 outside the sheet.
+ *
+ * The sheet is a ModalBottomSheet, which lives in its own window, so the mini player's cover can't be a
+ * real shared element with the artwork; the artwork follows this instead.
+ */
+val LocalSheetExpandProgress = staticCompositionLocalOf<State<Float>> { mutableStateOf(1f) }
 
 class NowPlayingScene<T : Any>(
 	override val key: Any,
@@ -61,6 +74,7 @@ class NowPlayingScene<T : Any>(
 			from = SheetValue.Hidden,
 			to = SheetValue.Expanded
 		)
+		val expandProgressState = rememberUpdatedState(expandProgress)
 		val shape = remember(expandProgress, screenCornerRadius) {
 			if (expandProgress == 1f) {
 				RectangleShape
@@ -88,7 +102,8 @@ class NowPlayingScene<T : Any>(
 			) {
 				CompositionLocalProvider(
 					LocalLifecycleOwner provides lifecycleOwner,
-					LocalSheetState provides sheetState
+					LocalSheetState provides sheetState,
+					LocalSheetExpandProgress provides expandProgressState
 				) {
 					Box(Modifier.fillMaxSize()) {
 						entry.Content()

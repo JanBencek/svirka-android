@@ -3,6 +3,7 @@ package paige.navic.ui.screens.collection.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.dropUnlessResumed
@@ -37,6 +39,7 @@ fun CollectionDetailScreenTopBar(
 	collection: DomainSongCollection?,
 	albumInfoState: UiState<DomainAlbumInfo>,
 	titleAlpha: Float,
+	containerColor: Color,
 	onSetShareId: (shareId: String?) -> Unit,
 	onDownloadAll: () -> Unit,
 	onCancelDownloadAll: () -> Unit,
@@ -54,6 +57,7 @@ fun CollectionDetailScreenTopBar(
 	val backStack = LocalNavStack.current
 
 	NestedTopBar(
+		colors = TopAppBarDefaults.topAppBarColors(containerColor = containerColor),
 		title = {
 			Text(
 				text = collection?.name.orEmpty(),

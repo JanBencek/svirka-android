@@ -17,14 +17,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import navic.composeapp.generated.resources.Res
-import navic.composeapp.generated.resources.title_library
+import navic.composeapp.generated.resources.home_greeting_afternoon
+import navic.composeapp.generated.resources.home_greeting_evening
+import navic.composeapp.generated.resources.home_greeting_morning
+import navic.composeapp.generated.resources.home_most_played
+import navic.composeapp.generated.resources.home_rediscover
+import navic.composeapp.generated.resources.option_sort_newest
+import navic.composeapp.generated.resources.option_sort_recent
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import paige.navic.LocalBottomBarScrollManager
 import paige.navic.domain.manager.LoginManager
+import paige.navic.domain.models.DomainAlbum
 import paige.navic.domain.models.DomainAlbumListType
 import paige.navic.domain.models.DomainArtistListType
 import paige.navic.domain.models.DomainSongCollection
@@ -45,6 +56,7 @@ import paige.navic.ui.screens.library.components.LibraryScreenContent
 import paige.navic.ui.screens.playlist.dialogs.PlaylistCreateDialog
 import paige.navic.ui.screens.playlist.viewmodels.PlaylistListViewModel
 import paige.navic.ui.screens.share.dialogs.ShareDialog
+import kotlin.time.Clock
 import kotlin.time.Duration
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
@@ -52,15 +64,14 @@ import kotlin.time.Duration
 fun LibraryScreen() {
 	val persistentViewModelStoreOwner = koinInject<PersistentViewModelStoreOwner>()
 
-	val albumsViewModel = koinViewModel<AlbumListViewModel>(
-		key = "libraryAlbums",
-		parameters = { parametersOf(DomainAlbumListType.Recent) },
-		viewModelStoreOwner = persistentViewModelStoreOwner
+	// "Jump back in" keeps the old Library's recently-played view model; each shelf gets its own
+	val recentAlbums = libraryAlbumShelf("libraryAlbums", "home-jump", Res.string.option_sort_recent, DomainAlbumListType.Recent)
+	val albumShelves = listOf(
+		libraryAlbumShelf("homeNewest", "home-newest", Res.string.option_sort_newest, DomainAlbumListType.Newest),
+		libraryAlbumShelf("homeFrequent", "home-frequent", Res.string.home_most_played, DomainAlbumListType.Frequent),
+		libraryAlbumShelf("homeRandom", "home-random", Res.string.home_rediscover, DomainAlbumListType.Random)
 	)
-	val albumsState by albumsViewModel.albumsState.collectAsStateWithLifecycle()
-	val selectedAlbum by albumsViewModel.selectedAlbum.collectAsStateWithLifecycle()
-	val selectedAlbumIsStarred by albumsViewModel.starred.collectAsStateWithLifecycle()
-	val selectedAlbumRating by albumsViewModel.rating.collectAsStateWithLifecycle()
+	val allAlbums = listOf(recentAlbums) + albumShelves
 
 	val playlistsViewModel = koinViewModel<PlaylistListViewModel>(
 		viewModelStoreOwner = persistentViewModelStoreOwner
@@ -96,14 +107,14 @@ fun LibraryScreen() {
 	val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
 	LaunchedEffect(loginState is LoginUiState.Success) {
-		albumsViewModel.refreshAlbums(false)
+		allAlbums.forEach { it.viewModel.refreshAlbums(false) }
 		playlistsViewModel.refreshPlaylists(false)
 		artistsViewModel.refreshArtists(false)
 		genresViewModel.refreshGenres(false)
 	}
 
 	Scaffold(
-		topBar = { RootTopBar({ Text(stringResource(Res.string.title_library)) }, scrollBehavior) },
+		topBar = { RootTopBar({ Text(stringResource(greeting())) }, scrollBehavior) },
 		bottomBar = {
 			val scrollManager = LocalBottomBarScrollManager.current
 			RootBottomBar(scrolled = scrollManager.isTriggered)
@@ -113,33 +124,28 @@ fun LibraryScreen() {
 			modifier = Modifier
 				.padding(top = innerPadding.calculateTopPadding())
 				.background(MaterialTheme.colorScheme.surface),
-			finished = albumsState !is UiState.Loading &&
+			finished = allAlbums.none { it.state is UiState.Loading } &&
 				playlistsState !is UiState.Loading &&
 				artistsState !is UiState.Loading &&
 				genresState !is UiState.Loading,
 			onRefresh = {
-				albumsViewModel.refreshAlbums(true)
+				allAlbums.forEach { it.viewModel.refreshAlbums(true) }
 				playlistsViewModel.refreshPlaylists(true)
 				artistsViewModel.refreshArtists(true)
 				genresViewModel.refreshGenres(true)
 			},
-			key = listOf(albumsState, playlistsState, artistsState, genresState)
+			key = allAlbums.map { it.state } + listOf(playlistsState, artistsState, genresState)
 		) {
 			LibraryScreenContent(
 				scrollBehavior = scrollBehavior,
 				innerPadding = innerPadding,
 				onSetShareId = { shareId = it },
+				onCreatePlaylist = { playlistCreateDialogShown = true },
 
-				albumsState = albumsState,
-				selectedAlbum = selectedAlbum,
-				selectedAlbumIsStarred = selectedAlbumIsStarred,
-				selectedAlbumRating = selectedAlbumRating,
-				onSelectAlbum = { albumsViewModel.selectAlbum(it) },
-				onClearAlbumSelection = { albumsViewModel.clearSelection() },
-				onStarSelectedAlbum = { albumsViewModel.starAlbum(it) },
-				onPlayAlbumNext = { if (selectedAlbum != null) player.playNext(selectedAlbum as DomainSongCollection) },
-				onAddAlbumToQueue = { if (selectedAlbum != null) player.addToQueue(selectedAlbum as DomainSongCollection) },
-				onRateSelectedAlbum = { albumsViewModel.setRating(it) },
+				recentAlbums = recentAlbums,
+				albumShelves = albumShelves,
+				onPlayAlbumNext = { player.playNext(it) },
+				onAddAlbumToQueue = { player.addToQueue(it) },
 
 				artistsState = artistsState,
 				selectedArtist = selectedArtist,
@@ -183,17 +189,16 @@ fun LibraryScreen() {
 		}
 	}
 
-	val flattenedErrors = listOf(
-		(albumsState as? UiState.Error)?.error,
+	val flattenedErrors = (allAlbums.map { (it.state as? UiState.Error)?.error } + listOf(
 		(playlistsState as? UiState.Error)?.error,
 		(artistsState as? UiState.Error)?.error,
 		(genresState as? UiState.Error)?.error
-	).mapNotNull { it?.stackTraceToString() }.takeIf { it.isNotEmpty() }?.joinToString("\n\n")
+	)).mapNotNull { it?.stackTraceToString() }.takeIf { it.isNotEmpty() }?.joinToString("\n\n")
 
 	ErrorSnackBar(
 		error = flattenedErrors?.let { Error(it) },
 		onClearError = {
-			albumsViewModel.clearError()
+			allAlbums.forEach { it.viewModel.clearError() }
 			playlistsViewModel.clearError()
 			artistsViewModel.clearError()
 			genresViewModel.clearError()
@@ -221,3 +226,42 @@ fun LibraryScreen() {
 		)
 	}
 }
+
+/** One album shelf on Home: its own view model (so it loads, selects and fails on its own) and shared-element tab. */
+class LibraryAlbumShelf(
+	val tab: String,
+	val title: StringResource,
+	val listType: DomainAlbumListType,
+	val viewModel: AlbumListViewModel,
+	val state: UiState<ImmutableList<DomainAlbum>>,
+	val selected: DomainAlbum?,
+	val starred: Boolean,
+	val rating: Int
+)
+
+@Composable
+private fun libraryAlbumShelf(
+	key: String,
+	tab: String,
+	title: StringResource,
+	listType: DomainAlbumListType
+): LibraryAlbumShelf {
+	val viewModel = koinViewModel<AlbumListViewModel>(
+		key = key,
+		parameters = { parametersOf(listType) },
+		viewModelStoreOwner = koinInject<PersistentViewModelStoreOwner>()
+	)
+	val state by viewModel.albumsState.collectAsStateWithLifecycle()
+	val selected by viewModel.selectedAlbum.collectAsStateWithLifecycle()
+	val starred by viewModel.starred.collectAsStateWithLifecycle()
+	val rating by viewModel.rating.collectAsStateWithLifecycle()
+	return LibraryAlbumShelf(tab, title, listType, viewModel, state, selected, starred, rating)
+}
+
+/** Same hours as the web app's Home greeting. */
+private fun greeting(): StringResource =
+	when (Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour) {
+		in 5..11 -> Res.string.home_greeting_morning
+		in 12..17 -> Res.string.home_greeting_afternoon
+		else -> Res.string.home_greeting_evening
+	}

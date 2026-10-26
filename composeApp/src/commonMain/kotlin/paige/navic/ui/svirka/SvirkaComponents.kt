@@ -1,5 +1,6 @@
 package paige.navic.ui.svirka
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -25,15 +26,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +49,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import paige.navic.LocalPlatformContext
+import paige.navic.util.core.isLandscape
+import paige.navic.util.ui.easedVerticalGradient
+import kotlin.time.Duration
 
 /*
  * Svirka web design system, ported (svirka/src/components, Tailwind → dp: 1 unit = 4dp).
@@ -64,10 +74,10 @@ object SvirkaText {
 			fontSize = 24.sp, lineHeight = 32.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.025).em
 		)
 
-	/** Detail page title (album/artist/playlist) — text-4xl bold, scaled for phones */
+	/** Detail page title (album/artist/playlist) — text-4xl bold, headlineLarge tier on phones */
 	val DetailTitle: TextStyle
-		@Composable get() = MaterialTheme.typography.headlineMedium.copy(
-			fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.025).em
+		@Composable get() = MaterialTheme.typography.headlineLarge.copy(
+			fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.025).em
 		)
 
 	/** Section heading — text-lg semibold */
@@ -189,8 +199,9 @@ fun SvirkaPageHeading(
 }
 
 /**
- * Album / artist / playlist header: cover beside eyebrow label, big title,
- * an optional clickable subtitle (artist) and a muted meta line.
+ * Album / artist / playlist header, Spotify mobile style: a big centred cover, then the eyebrow label, a big title,
+ * an optional clickable subtitle (artist) and a muted meta line. Landscape keeps the cover beside the text.
+ * [cover] receives the sized modifier (add the shared-element modifier after it).
  */
 @Composable
 fun SvirkaDetailHeader(
@@ -200,33 +211,122 @@ fun SvirkaDetailHeader(
 	subtitle: String? = null,
 	onSubtitleClick: (() -> Unit)? = null,
 	meta: String? = null,
-	cover: @Composable () -> Unit
+	cover: @Composable (Modifier) -> Unit
+) {
+	if (LocalPlatformContext.current.isLandscape()) {
+		Row(
+			modifier = modifier.fillMaxWidth(),
+			verticalAlignment = Alignment.Bottom,
+			horizontalArrangement = Arrangement.spacedBy(16.dp)
+		) {
+			cover(Modifier.size(140.dp))
+			SvirkaDetailHeaderText(eyebrow, title, subtitle, onSubtitleClick, meta, Modifier.weight(1f))
+		}
+	} else {
+		Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+			cover(Modifier.size(200.dp))
+			Spacer(Modifier.height(20.dp))
+			SvirkaDetailHeaderText(eyebrow, title, subtitle, onSubtitleClick, meta, Modifier.fillMaxWidth())
+		}
+	}
+}
+
+@Composable
+private fun SvirkaDetailHeaderText(
+	eyebrow: String,
+	title: String,
+	subtitle: String?,
+	onSubtitleClick: (() -> Unit)?,
+	meta: String?,
+	modifier: Modifier
+) {
+	Column(modifier) {
+		Text(eyebrow.uppercase(), style = SvirkaText.Eyebrow, color = mutedColor)
+		Spacer(Modifier.height(4.dp))
+		Text(title, style = SvirkaText.DetailTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+		if (subtitle != null) {
+			Text(
+				subtitle,
+				style = SvirkaText.Body.copy(fontWeight = FontWeight.Medium),
+				color = if (onSubtitleClick != null) MaterialTheme.colorScheme.onSurface else mutedColor,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis,
+				modifier = Modifier
+					.padding(top = 8.dp)
+					.then(if (onSubtitleClick != null) Modifier.clickable(onClick = onSubtitleClick) else Modifier)
+			)
+		}
+		if (meta != null) {
+			Text(meta, style = SvirkaText.Body, color = mutedColor, modifier = Modifier.padding(top = 2.dp))
+		}
+	}
+}
+
+/** Alpha of the cover colour at the top of a detail header's gradient (the web's `from-<cover>/50`). */
+private const val HEADER_TINT_ALPHA = 0.5f
+
+/**
+ * Spotify-style wash behind a detail header: [color] at 50% at the top, easing into nothing at the bottom
+ * of the element (or after [height]). Put it before any padding so it's full-bleed.
+ */
+fun Modifier.svirkaHeaderGradient(color: Color, height: Dp? = null): Modifier = drawBehind {
+	drawRect(
+		brush = Brush.easedVerticalGradient(
+			easing = FastOutSlowInEasing,
+			startY = 0f,
+			endY = height?.toPx() ?: size.height,
+			color = color.copy(alpha = HEADER_TINT_ALPHA)
+		)
+	)
+}
+
+/**
+ * Top bar colour over a [svirkaHeaderGradient]: the gradient's top colour, turning solid surface as
+ * [scrolled] goes from 0 to 1.
+ */
+@Composable
+fun svirkaHeaderBarColor(color: Color, scrolled: Float): Color =
+	lerp(MaterialTheme.colorScheme.surface, color, HEADER_TINT_ALPHA * (1f - scrolled.coerceIn(0f, 1f)))
+
+/** Total length for a header's meta line: "42 min", "1 hr 5 min". */
+fun Duration.svirkaLength(): String {
+	val hours = inWholeHours
+	val minutes = inWholeMinutes % 60
+	return when {
+		hours == 0L -> "${maxOf(1L, minutes)} min"
+		minutes == 0L -> "$hours hr"
+		else -> "$hours hr $minutes min"
+	}
+}
+
+/** Action row under a detail header: [leading] actions (download …), then Shuffle and a big round Play. */
+@Composable
+fun SvirkaHeroPlayRow(
+	onPlay: () -> Unit,
+	onShuffle: () -> Unit,
+	modifier: Modifier = Modifier,
+	enabled: Boolean = true,
+	leading: @Composable RowScope.() -> Unit = {}
 ) {
 	Row(
-		modifier = modifier.fillMaxWidth(),
-		verticalAlignment = Alignment.Bottom,
-		horizontalArrangement = Arrangement.spacedBy(16.dp)
+		modifier = modifier,
+		verticalAlignment = Alignment.CenterVertically,
+		horizontalArrangement = Arrangement.spacedBy(8.dp)
 	) {
-		cover()
-		Column(Modifier.weight(1f)) {
-			Text(eyebrow.uppercase(), style = SvirkaText.Eyebrow, color = mutedColor)
-			Spacer(Modifier.height(4.dp))
-			Text(title, style = SvirkaText.DetailTitle, maxLines = 3, overflow = TextOverflow.Ellipsis)
-			if (subtitle != null) {
-				Text(
-					subtitle,
-					style = SvirkaText.Body.copy(fontWeight = FontWeight.Medium),
-					color = if (onSubtitleClick != null) MaterialTheme.colorScheme.onSurface else mutedColor,
-					maxLines = 1,
-					overflow = TextOverflow.Ellipsis,
-					modifier = Modifier
-						.padding(top = 8.dp)
-						.then(if (onSubtitleClick != null) Modifier.clickable(onClick = onSubtitleClick) else Modifier)
-				)
-			}
-			if (meta != null) {
-				Text(meta, style = SvirkaText.Body, color = mutedColor, modifier = Modifier.padding(top = 2.dp))
-			}
+		leading()
+		Spacer(Modifier.weight(1f))
+		SvirkaIconButton(SvirkaIcons.Shuffle, "Shuffle play", onShuffle, size = 48.dp, iconSize = 24.dp)
+		FilledIconButton(
+			onClick = onPlay,
+			enabled = enabled,
+			shape = CircleShape,
+			colors = IconButtonDefaults.filledIconButtonColors(
+				containerColor = MaterialTheme.colorScheme.primary,
+				contentColor = MaterialTheme.colorScheme.onPrimary
+			),
+			modifier = Modifier.size(56.dp)
+		) {
+			Icon(SvirkaIcons.Play, "Play", Modifier.size(26.dp))
 		}
 	}
 }

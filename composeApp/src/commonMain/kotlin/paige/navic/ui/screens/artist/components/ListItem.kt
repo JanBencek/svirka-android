@@ -1,5 +1,7 @@
 package paige.navic.ui.screens.artist.components
 
+import androidx.compose.animation.BoundsTransform
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -14,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.launch
@@ -22,6 +25,7 @@ import navic.composeapp.generated.resources.count_albums
 import org.jetbrains.compose.resources.pluralStringResource
 import org.koin.compose.koinInject
 import paige.navic.LocalNavStack
+import paige.navic.LocalSharedTransitionScope
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.models.DomainAlbum
 import paige.navic.domain.models.DomainArtist
@@ -30,6 +34,7 @@ import paige.navic.ui.components.common.MarqueeText
 import paige.navic.ui.components.sheets.ArtistSheet
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.playlist.dialogs.PlaylistUpdateDialog
+import paige.navic.util.ui.EmphasizedDecelerateEasing
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -57,12 +62,26 @@ fun ArtistListScreenListItem(
 	Box(modifier) {
 		ListItem(
 			leadingContent = {
-				CoverArt(
-					coverArtId = artist.coverArtId,
-					modifier = Modifier.size(50.dp),
-					thumbnail = true,
-					shape = preferenceManager.coverArtShape.decreasedShape
-				)
+				// same key as the grid card and ArtistDetail's image, so it morphs into the detail header
+				with(LocalSharedTransitionScope.current) {
+					CoverArt(
+						coverArtId = artist.coverArtId,
+						modifier = Modifier
+							.size(50.dp)
+							.sharedElement(
+								sharedContentState = this@with.rememberSharedContentState("artists-${artist.id}-cover"),
+								boundsTransform = BoundsTransform { _, _ ->
+									tween(
+										durationMillis = 500,
+										easing = EmphasizedDecelerateEasing
+									)
+								},
+								animatedVisibilityScope = LocalNavAnimatedContentScope.current
+							),
+						thumbnail = true,
+						shape = preferenceManager.coverArtShape.decreasedShape
+					)
+				}
 			},
 			content = { MarqueeText(artist.name) },
 			supportingContent = {

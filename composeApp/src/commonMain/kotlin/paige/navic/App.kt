@@ -400,7 +400,7 @@ private fun entryProvider(
 			FriendsScreen(key.nested)
 		}
 		entry<Screen.ArtistDetail> { key ->
-			ArtistDetailScreen(key.artist)
+			ArtistDetailScreen(key.artist, key.tab)
 		}
 
 		// settings

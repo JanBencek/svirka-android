@@ -166,7 +166,7 @@ fun ArtistListScreenGridItem(
 	Box(modifier) {
 		ArtGridItem(
 			onClick = dropUnlessResumed {
-				backStack.add(Screen.ArtistDetail(artist.id))
+				backStack.add(Screen.ArtistDetail(artist.id, tab))
 			},
 			onLongClick = onSelect,
 			coverArtId = artist.coverArtId,

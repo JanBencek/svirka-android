@@ -64,9 +64,11 @@ import paige.navic.ui.screens.collection.components.CollectionDetailScreenTopBar
 import paige.navic.ui.screens.collection.components.collectionDetailScreenMoreByArtistRow
 import paige.navic.ui.screens.collection.viewmodels.CollectionDetailViewModel
 import paige.navic.ui.screens.share.dialogs.ShareDialog
+import paige.navic.ui.svirka.svirkaHeaderBarColor
 import paige.navic.ui.theme.NavicTheme
 import paige.navic.util.core.isLandscape
 import paige.navic.util.ui.rememberColorSchemeFromCoverArt
+import paige.navic.util.ui.rememberCoverColor
 import paige.navic.util.ui.withoutTop
 import kotlin.time.Duration
 
@@ -136,12 +138,20 @@ fun CollectionDetailScreen(
 	}
 
 	NavicTheme(colorScheme) {
+		// Spotify-style header wash from the cover, whatever dynamicTheming says; playlists show the
+		// primary-tinted playlist artwork, so they take primary
+		val coverColor = rememberCoverColor(
+			coverArtId = collection?.coverArtId?.takeIf { collection !is DomainPlaylist },
+			fallback = if (collection is DomainPlaylist) MaterialTheme.colorScheme.primary
+			else MaterialTheme.colorScheme.surface
+		)
 		Scaffold(
 			topBar = {
 				CollectionDetailScreenTopBar(
 					albumInfoState = albumInfoState,
 					collection = collection,
 					titleAlpha = titleAlpha,
+					containerColor = svirkaHeaderBarColor(coverColor, titleAlpha),
 					onSetShareId = { shareId = it },
 					onDownloadAll = { viewModel.downloadAll() },
 					onCancelDownloadAll = { viewModel.cancelDownloadAll() },
@@ -189,7 +199,8 @@ fun CollectionDetailScreen(
 						CollectionDetailScreenHeadingRow(
 							collection = collection,
 							tab = tab,
-							titleAlpha = 1f - titleAlpha
+							titleAlpha = 1f - titleAlpha,
+							coverColor = coverColor
 						)
 					}
 

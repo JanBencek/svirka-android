@@ -1,5 +1,6 @@
 package paige.navic.ui.screens.starred.components
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
@@ -71,6 +72,7 @@ import paige.navic.ui.components.sheets.CollectionSheet
 import paige.navic.ui.core.UiState
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.playlist.dialogs.PlaylistUpdateDialog
+import paige.navic.ui.svirka.svirkaHeaderGradient
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,6 +120,7 @@ fun StarredScreenContent(
 	onStarSelectedArtist: (Boolean) -> Unit,
 	onPlayArtistNext: () -> Unit,
 	onAddArtistToQueue: () -> Unit,
+	scrollState: ScrollState = rememberScrollState(),
 ) {
 	val gridState = rememberLazyGridState()
 	val backStack = LocalNavStack.current
@@ -133,12 +136,11 @@ fun StarredScreenContent(
 
 	var songsToAddToPlaylist by rememberSaveable { mutableStateOf<ImmutableList<DomainSong>?>(null) }
 
-	val scrollState = rememberScrollState()
-
 	Column(
 		modifier = Modifier
 			.fillMaxSize()
-			.verticalScroll(state = scrollState),
+			.verticalScroll(state = scrollState)
+			.svirkaHeaderGradient(MaterialTheme.colorScheme.primary, height = 240.dp),
 		verticalArrangement = Arrangement.spacedBy(
 			space = 12.dp,
 			alignment = if (albums.isEmpty() && songs.isEmpty() && artists.isEmpty()) Alignment.CenterVertically else Alignment.Top

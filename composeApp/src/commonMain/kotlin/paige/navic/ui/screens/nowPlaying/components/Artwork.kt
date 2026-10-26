@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import paige.navic.domain.models.DomainSong
@@ -22,6 +23,7 @@ import paige.navic.icons.filled.Note
 import paige.navic.icons.outlined.Radio
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.common.CoverArt
+import paige.navic.ui.navigation.LocalSheetExpandProgress
 
 @Composable
 fun NowPlayingArtwork(
@@ -34,6 +36,7 @@ fun NowPlayingArtwork(
 	val playerState by player.uiState.collectAsState()
 
 	val isRadio = song.id.startsWith("radio_")
+	val sheetProgress = LocalSheetExpandProgress.current
 
 	val padding by animateDpAsState(
 		targetValue = if (playerState.isPaused || playerState.currentSong?.id != song.id)
@@ -43,6 +46,13 @@ fun NowPlayingArtwork(
 	Box(
 		contentAlignment = Alignment.Center,
 		modifier = modifier
+			// grows in with the sheet as it opens (from the mini player) and shrinks back as it closes
+			.graphicsLayer {
+				val progress = sheetProgress.value.let { if (it.isNaN()) 1f else it.coerceIn(0f, 1f) }
+				alpha = progress
+				scaleX = 0.8f + 0.2f * progress
+				scaleY = 0.8f + 0.2f * progress
+			}
 	) {
 		CoverArt(
 			coverArtId = song.coverArtId,

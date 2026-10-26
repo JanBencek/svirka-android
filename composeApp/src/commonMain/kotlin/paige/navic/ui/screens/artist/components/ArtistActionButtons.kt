@@ -22,8 +22,8 @@ import paige.navic.icons.Icons
 import paige.navic.icons.outlined.Close
 import paige.navic.icons.outlined.Delete
 import paige.navic.icons.outlined.DownloadOff
+import paige.navic.ui.svirka.SvirkaHeroPlayRow
 import paige.navic.ui.svirka.SvirkaIcons
-import paige.navic.ui.svirka.SvirkaPlayShuffleRow
 import paige.navic.ui.svirka.mutedColor
 
 @Composable
@@ -37,7 +37,7 @@ fun ArtistActionButtons(
 	playEnabled: Boolean,
 	modifier: Modifier = Modifier
 ) {
-	SvirkaPlayShuffleRow(
+	SvirkaHeroPlayRow(
 		onPlay = onPlay,
 		onShuffle = onShuffle,
 		enabled = playEnabled,

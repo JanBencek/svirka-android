@@ -126,7 +126,11 @@ sealed interface Screen : NavKey {
 
 	@Immutable
 	@Serializable
-	data class ArtistDetail(val artist: String) : Screen
+	data class ArtistDetail(
+		val artist: String,
+		// which list the artist was opened from, for the image's shared-element key (see ArtGridItem)
+		val tab: String = "artists"
+	) : Screen
 
 	// settings
 	@Immutable
