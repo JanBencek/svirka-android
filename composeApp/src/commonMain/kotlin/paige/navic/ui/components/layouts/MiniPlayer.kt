@@ -90,6 +90,7 @@ import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.common.MarqueeText
 import paige.navic.ui.core.UiState
 import paige.navic.ui.navigation.Screen
+import paige.navic.ui.navigation.nowPlayingCover
 import paige.navic.ui.screens.nowPlaying.viewmodels.NowPlayingViewModel
 import paige.navic.ui.screens.settings.viewmodels.NavtabsViewModel
 import paige.navic.ui.svirka.SvirkaIcons
@@ -254,6 +255,8 @@ fun MiniPlayer(
 							modifier = Modifier
 								.size(56.dp)
 								.padding(if (playerState.isLoading) 8.dp else 0.dp)
+								// grows into the Now Playing artwork when it opens
+								.then(if (song != null) Modifier.nowPlayingCover(song.id) else Modifier)
 								.clip(
 									ContinuousRoundedRectangle(coverRounding)
 								)

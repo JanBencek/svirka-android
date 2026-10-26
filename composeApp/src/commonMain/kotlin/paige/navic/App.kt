@@ -42,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -77,6 +76,7 @@ import paige.navic.ui.components.sheets.ChangelogSheet
 import paige.navic.ui.components.snackbars.NavicSnackBar
 import paige.navic.ui.navigation.BottomSheetSceneStrategy
 import paige.navic.ui.navigation.NowPlayingSceneStrategy
+import paige.navic.ui.navigation.nowPlayingTransitions
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.album.AlbumListScreen
 import paige.navic.ui.screens.artist.ArtistDetailScreen
@@ -119,6 +119,7 @@ import paige.navic.ui.screens.song.SongDetailSheet
 import paige.navic.ui.screens.song.SongListScreen
 import paige.navic.ui.screens.starred.StarredScreen
 import paige.navic.ui.theme.NavicTheme
+import paige.navic.util.ui.rememberColorSchemeForCurrentSong
 import paige.navic.util.core.PlatformContext
 import paige.navic.util.core.PlatformType
 import paige.navic.util.core.rememberPlatformContext
@@ -351,10 +352,10 @@ private fun entryProvider(
 		entry<Screen.Login> {
 			LoginScreen()
 		}
-		entry<Screen.NowPlaying>(
-			metadata = NowPlayingSceneStrategy.bottomSheet(maxWidth = Dp.Unspecified)
-		) {
-			NowPlayingScreen()
+		entry<Screen.NowPlaying>(metadata = nowPlayingTransitions) {
+			NavicTheme(rememberColorSchemeForCurrentSong()) {
+				NowPlayingScreen()
+			}
 		}
 		entry<Screen.Lyrics>(metadata = NowPlayingSceneStrategy.bottomSheet(isTransparent = true)) {
 			val player = koinInject<MediaPlayerViewModel>()

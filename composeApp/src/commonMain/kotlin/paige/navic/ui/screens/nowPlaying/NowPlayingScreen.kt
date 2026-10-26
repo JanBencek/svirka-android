@@ -1,5 +1,10 @@
 package paige.navic.ui.screens.nowPlaying
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -9,11 +14,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,10 +31,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_lyrics
 import navic.composeapp.generated.resources.action_navigate_back
@@ -58,7 +68,6 @@ import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.nowPlaying.components.controls.NowPlayingArtworkPager
 import paige.navic.ui.screens.nowPlaying.components.rows.NowPlayingControlsRow
 import paige.navic.ui.screens.nowPlaying.viewmodels.NowPlayingViewModel
-import paige.navic.util.ui.LocalSheetState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -67,11 +76,9 @@ fun NowPlayingScreen() {
 	val player = koinInject<MediaPlayerViewModel>()
 	val backStack = LocalNavStack.current
 
-	val currentScreen = backStack.lastOrNull()
-	val isPlayerCurrent = currentScreen is Screen.NowPlaying
-		|| currentScreen is Screen.Queue
-		|| currentScreen is Screen.PlaybackSpeed
-		|| currentScreen is Screen.SongDetailSheet
+	// Only the Lyrics sheet hides the player under it. While Now Playing closes, the screen below is already on top
+	// of the back stack, and the artwork has to stay to morph back into the mini player.
+	val isPlayerCurrent = backStack.lastOrNull() !is Screen.Lyrics
 
 	val playerState by player.uiState.collectAsStateWithLifecycle()
 	val song = playerState.currentSong
@@ -83,129 +90,145 @@ fun NowPlayingScreen() {
 	var devicesOpen by remember { mutableStateOf(false) }
 	if (devicesOpen) DevicesSheet(onDismissRequest = { devicesOpen = false })
 
-	val sheetState = LocalSheetState.current
-	val closeScope = rememberCoroutineScope()
 	val animateToDismiss = dropUnlessResumed {
-		closeScope.launch {
-			sheetState.hide()
-		}.invokeOnCompletion {
-			if (!sheetState.isVisible) {
-				backStack.remove(Screen.NowPlaying)
-			}
-		}
+		backStack.remove(Screen.NowPlaying)
 	}
 
-	SheetScaffold(
-		toolbar = { windowInsets ->
-			SheetToolbar(
-				modifier = Modifier.alpha(if (isPlayerCurrent) 1f else 0f),
-				windowInsets = windowInsets,
-				title = {
-					Text(stringResource(Res.string.title_now_playing))
+	// Swipe down to close: the page follows the finger, and past the threshold (or flung) it closes
+	val dragScope = rememberCoroutineScope()
+	val dragOffset = remember { Animatable(0f) }
+	val dismissDistance = with(LocalDensity.current) { 120.dp.toPx() }
+
+	Box(
+		Modifier
+			.fillMaxSize()
+			.offset { IntOffset(0, dragOffset.value.roundToInt()) }
+			.background(MaterialTheme.colorScheme.surface)
+			.draggable(
+				orientation = Orientation.Vertical,
+				state = rememberDraggableState { delta ->
+					dragScope.launch {
+						dragOffset.snapTo((dragOffset.value + delta).coerceAtLeast(0f))
+					}
 				},
-				navigationIcon = {
-					TopBarButton(
-						onClick = animateToDismiss,
-						content = {
-							Icon(
-								imageVector = Icons.Outlined.KeyboardArrowDown,
-								contentDescription = stringResource(Res.string.action_navigate_back)
-							)
-						}
-					)
-				},
-				actions = {
-					SheetActionButton(
-						icon = Icons.Outlined.Lyrics,
-						contentDescription = stringResource(Res.string.action_lyrics),
-						onClick = dropUnlessResumed { backStack.add(Screen.Lyrics) },
-						isStartRounded = true
-					)
-					SheetActionButton(
-						icon = Icons.Outlined.List,
-						contentDescription = stringResource(Res.string.action_queue),
-						onClick = dropUnlessResumed { backStack.add(Screen.Queue) }
-					)
-					SheetActionButton(
-						icon = Icons.Outlined.Devices,
-						contentDescription = stringResource(Res.string.connect_devices),
-						onClick = { devicesOpen = true },
-						isEndRounded = true
-					)
+				onDragStopped = { velocity ->
+					if (dragOffset.value > dismissDistance || velocity > 2500f) animateToDismiss()
+					else dragOffset.animateTo(0f)
 				}
 			)
-		}
-	) { contentPadding ->
-		Box(Modifier.fillMaxSize()) {
-			if (preferenceManager.nowPlayingBackgroundStyle
-				== NowPlayingBackgroundStyle.Dynamic
-			) {
-				BlendBackground(
-					coverArtId = song?.coverArtId,
-					isPaused = playerState.isPaused
-				)
-			}
-			if (!isPlayerCurrent) return@Box
-			BoxWithConstraints(
-				modifier = Modifier
-					.padding(horizontal = 8.dp)
-					.fillMaxSize()
-			) {
-				val isLandscape = maxWidth > maxHeight
-				val toolbarPosition = preferenceManager.nowPlayingToolbarPosition
-				val padding = when {
-					isLandscape -> contentPadding
-					toolbarPosition == ToolbarPosition.Top -> contentPadding.plus(
-						PaddingValues(
-							bottom = 40.dp
+	) {
+		SheetScaffold(
+			toolbar = { windowInsets ->
+				SheetToolbar(
+					modifier = Modifier.alpha(if (isPlayerCurrent) 1f else 0f),
+					windowInsets = windowInsets,
+					title = {
+						Text(stringResource(Res.string.title_now_playing))
+					},
+					navigationIcon = {
+						TopBarButton(
+							onClick = animateToDismiss,
+							content = {
+								Icon(
+									imageVector = Icons.Outlined.KeyboardArrowDown,
+									contentDescription = stringResource(Res.string.action_navigate_back)
+								)
+							}
 						)
-					)
-
-					toolbarPosition == ToolbarPosition.Bottom -> contentPadding.plus(
-						PaddingValues(
-							top = 40.dp
+					},
+					actions = {
+						SheetActionButton(
+							icon = Icons.Outlined.Lyrics,
+							contentDescription = stringResource(Res.string.action_lyrics),
+							onClick = dropUnlessResumed { backStack.add(Screen.Lyrics) },
+							isStartRounded = true
 						)
-					)
-
-					else -> contentPadding
-				}
-				if (isLandscape) {
-					Row(
-						modifier = Modifier.fillMaxSize().padding(padding),
-						horizontalArrangement = Arrangement.SpaceEvenly,
-						verticalAlignment = Alignment.CenterVertically
-					) {
-						NowPlayingArtworkPager(
-							modifier = Modifier.weight(1f).fillMaxHeight(),
-							isLandscape = true
+						SheetActionButton(
+							icon = Icons.Outlined.List,
+							contentDescription = stringResource(Res.string.action_queue),
+							onClick = dropUnlessResumed { backStack.add(Screen.Queue) }
 						)
-						NowPlayingControlsRow(
-							modifier = Modifier.weight(1f).fillMaxHeight(),
-							isLandscape = true,
-							songIsStarred = songIsStarred,
-							onSetSongIsStarred = { viewModel.starSong(it) },
-							songRating = songRating,
-							onSetSongRating = { viewModel.rateSong(it) }
+						SheetActionButton(
+							icon = Icons.Outlined.Devices,
+							contentDescription = stringResource(Res.string.connect_devices),
+							onClick = { devicesOpen = true },
+							isEndRounded = true
 						)
 					}
-				} else {
-					Column(
-						modifier = Modifier.fillMaxSize().padding(padding),
-						horizontalAlignment = Alignment.CenterHorizontally,
-						verticalArrangement = Arrangement.Center
-					) {
-						NowPlayingArtworkPager(
-							modifier = Modifier.weight(1f).fillMaxWidth(),
-							isLandscape = false
+				)
+			}
+		) { contentPadding ->
+			Box(Modifier.fillMaxSize()) {
+				if (preferenceManager.nowPlayingBackgroundStyle
+					== NowPlayingBackgroundStyle.Dynamic
+				) {
+					BlendBackground(
+						coverArtId = song?.coverArtId,
+						isPaused = playerState.isPaused
+					)
+				}
+				if (!isPlayerCurrent) return@Box
+				BoxWithConstraints(
+					modifier = Modifier
+						.padding(horizontal = 8.dp)
+						.fillMaxSize()
+				) {
+					val isLandscape = maxWidth > maxHeight
+					val toolbarPosition = preferenceManager.nowPlayingToolbarPosition
+					val padding = when {
+						isLandscape -> contentPadding
+						toolbarPosition == ToolbarPosition.Top -> contentPadding.plus(
+							PaddingValues(
+								bottom = 40.dp
+							)
 						)
-						NowPlayingControlsRow(
-							modifier = Modifier.weight(1f),
-							isLandscape = false,
-							songIsStarred = songIsStarred,
-							onSetSongIsStarred = { viewModel.starSong(it) },
-							songRating = songRating,
-							onSetSongRating = { viewModel.rateSong(it) }
+
+						toolbarPosition == ToolbarPosition.Bottom -> contentPadding.plus(
+							PaddingValues(
+								top = 40.dp
+							)
 						)
+
+						else -> contentPadding
+					}
+					if (isLandscape) {
+						Row(
+							modifier = Modifier.fillMaxSize().padding(padding),
+							horizontalArrangement = Arrangement.SpaceEvenly,
+							verticalAlignment = Alignment.CenterVertically
+						) {
+							NowPlayingArtworkPager(
+								modifier = Modifier.weight(1f).fillMaxHeight(),
+								isLandscape = true
+							)
+							NowPlayingControlsRow(
+								modifier = Modifier.weight(1f).fillMaxHeight(),
+								isLandscape = true,
+								songIsStarred = songIsStarred,
+								onSetSongIsStarred = { viewModel.starSong(it) },
+								songRating = songRating,
+								onSetSongRating = { viewModel.rateSong(it) }
+							)
+						}
+					} else {
+						Column(
+							modifier = Modifier.fillMaxSize().padding(padding),
+							horizontalAlignment = Alignment.CenterHorizontally,
+							verticalArrangement = Arrangement.Center
+						) {
+							NowPlayingArtworkPager(
+								modifier = Modifier.weight(1f).fillMaxWidth(),
+								isLandscape = false
+							)
+							NowPlayingControlsRow(
+								modifier = Modifier.weight(1f),
+								isLandscape = false,
+								songIsStarred = songIsStarred,
+								onSetSongIsStarred = { viewModel.starSong(it) },
+								songRating = songRating,
+								onSetSongRating = { viewModel.rateSong(it) }
+							)
+						}
 					}
 				}
 			}
