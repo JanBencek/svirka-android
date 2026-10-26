@@ -17,6 +17,12 @@
 	<string name="jam_invite_to">%1$s invites you to %2$s\'s Jam</string>
 	<string name="jam_invited">Invited %1$s</string>
 	<string name="jam_join">Join</string>
+	<string name="friends_sent">Sent to %1$s</string>
+	<string name="friends_reacted">Reaction sent to %1$s</string>
+	<string name="friends_not_synced">That song isn\'t on this phone yet</string>
+	<string name="inbox_share">%1$s sent you %2$s</string>
+	<string name="inbox_reaction">%1$s reacted %2$s to %3$s</string>
+	<string name="inbox_view">View</string>
 	<string name="title_feedback">Send feedback</string>
 	<string name="subtitle_feedback">Tell us what to fix or add</string>
 	<string name="feedback_hint">What\'s on your mind?</string>

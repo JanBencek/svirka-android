@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,6 +23,7 @@ import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.ui.screens.nowPlaying.components.controls.NowPlayingProgressBar
+import paige.navic.ui.svirka.SvirkaJamBadge
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -65,5 +67,6 @@ fun NowPlayingControlsRow(
 		}
 		Spacer(modifier = Modifier.height(if (isLandscape) 24.dp else 30.dp))
 		NowPlayingButtonsRow()
+		SvirkaJamBadge(Modifier.padding(top = 12.dp))
 	}
 }

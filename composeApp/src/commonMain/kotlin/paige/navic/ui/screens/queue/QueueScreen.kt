@@ -46,6 +46,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import paige.navic.LocalNavStack
+import paige.navic.domain.manager.ConnectManager
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.PlaylistRemove
 import paige.navic.shared.MediaPlayerViewModel
@@ -68,6 +69,11 @@ fun QueueScreen() {
 	val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 	val downloadedSongs by viewModel.downloadedSongs.collectAsStateWithLifecycle()
 	val queue = playerState.queue
+	// Svirka Jam: who queued what, from the host's state (the host reports it, guests get it)
+	val jam by koinInject<ConnectManager>().jam.collectAsStateWithLifecycle()
+	val addedBy = remember(jam?.state) {
+		jam?.state?.queue.orEmpty().mapNotNull { s -> s.addedBy?.let { s.id to it } }.toMap()
+	}
 
 	val haptic = LocalHapticFeedback.current
 	val draggableState = rememberDraggableListState(viewModel.listState) { from, to ->
@@ -192,7 +198,8 @@ fun QueueScreen() {
 						player.removeFromQueue(index)
 					},
 					isOffline = !isOnline,
-					isDownloaded = downloadedSongs.containsKey(song.id)
+					isDownloaded = downloadedSongs.containsKey(song.id),
+					addedBy = addedBy[song.id]
 				)
 			}
 			if (queue.isEmpty()) {

@@ -61,6 +61,7 @@ import paige.navic.icons.outlined.Repeat
 import paige.navic.icons.outlined.Shuffle
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.common.playPauseIconPainter
+import paige.navic.ui.svirka.jamLocksControls
 
 @Composable
 fun NowPlayingButtonsRow() {
@@ -70,6 +71,7 @@ fun NowPlayingButtonsRow() {
 	val isPressed by interactionSource.collectIsPressedAsState()
 	val scale = remember { Animatable(1f) }
 	val enabled = playerState.currentSong != null
+	val controls = enabled && !jamLocksControls() // Svirka Jam guest without control: buttons off
 	val haptic = LocalHapticFeedback.current
 
 	val hapticType = if (playerState.isPaused) {
@@ -134,7 +136,7 @@ fun NowPlayingButtonsRow() {
 			onClick = {
 				player.previous()
 			},
-			enabled = enabled
+			enabled = controls
 		) {
 			Icon(
 				imageVector = Icons.Filled.SkipPrevious,
@@ -154,7 +156,7 @@ fun NowPlayingButtonsRow() {
 				haptic.performHapticFeedback(hapticType)
 				player.togglePlay()
 			},
-			enabled = enabled,
+			enabled = controls,
 			interactionSource = interactionSource
 		) {
 			val painter = playPauseIconPainter(playerState.isPaused)
@@ -194,7 +196,7 @@ fun NowPlayingButtonsRow() {
 			onClick = {
 				player.next()
 			},
-			enabled = enabled,
+			enabled = controls,
 		) {
 			Icon(
 				imageVector = Icons.Filled.SkipNext,

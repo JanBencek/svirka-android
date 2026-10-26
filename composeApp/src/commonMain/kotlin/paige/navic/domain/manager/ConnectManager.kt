@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -34,6 +35,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import navic.composeapp.generated.resources.Res
+import navic.composeapp.generated.resources.friends_reacted
+import navic.composeapp.generated.resources.friends_sent
+import navic.composeapp.generated.resources.inbox_reaction
+import navic.composeapp.generated.resources.inbox_share
+import navic.composeapp.generated.resources.inbox_view
 import navic.composeapp.generated.resources.jam_added
 import navic.composeapp.generated.resources.jam_enqueued
 import navic.composeapp.generated.resources.jam_error
@@ -62,7 +68,8 @@ data class ConnectSong(
 	val artist: String,
 	val album: String,
 	val coverArt: String? = null,
-	val duration: Double
+	val duration: Double,
+	val addedBy: String? = null // in a Jam: the guest who queued it
 )
 
 /** What a device plays: [queue] in play order, [index] into it, [position] seconds at server time [at] (ms). */
@@ -94,19 +101,58 @@ data class JamView(
 	val you: String? = null,
 	val members: List<String> = emptyList(),
 	val listener: String? = null,
-	val state: ConnectState? = null
-)
+	val state: ConnectState? = null,
+	val guestsControl: Boolean = true // false: guests may only add songs
+) {
+	/** True when this [device] plays along as a guest who may not play/pause/skip/seek. */
+	fun locks(device: String) = listener == device && !guestsControl
+}
 
 @Serializable
 data class FriendNow(val song: ConnectSong, val playing: Boolean, val at: Long)
 
-/** Someone this user follows: what they play now (or last played) and the Jam they are in. */
+/**
+ * Someone this user follows: what they play now (or last played) and the Jam they are in.
+ * [hidden]: they listen privately (no song, no Jam, shown offline).
+ */
 @Serializable
-data class Friend(val user: String, val online: Boolean = false, val now: FriendNow? = null, val jam: String? = null)
+data class Friend(
+	val user: String,
+	val online: Boolean = false,
+	val now: FriendNow? = null,
+	val jam: String? = null,
+	val followsYou: Boolean = false,
+	@SerialName("private") val hidden: Boolean = false
+)
 
-/** [others]: users this user could follow. */
+/** Private listening: friends don't see what this user plays until [until] (server ms), or until turned off (null). */
 @Serializable
-data class Friends(val friends: List<Friend> = emptyList(), val others: List<String> = emptyList())
+data class Hidden(val until: Long? = null)
+
+/** [hidden]: null while friends see what this user plays. */
+@Serializable
+data class FriendsMe(@SerialName("private") val hidden: Hidden? = null)
+
+/** A song [from] sent this user, or (with [emoji]) their reaction to one. */
+@Serializable
+data class InboxItem(val id: String, val from: String, val song: ConnectSong, val emoji: String? = null, val at: Long = 0)
+
+/** [followers]: follow this user, who doesn't follow them back. [inbox]: newest first. [others]: users to follow. */
+@Serializable
+data class Friends(
+	val me: FriendsMe = FriendsMe(),
+	val friends: List<Friend> = emptyList(),
+	val followers: List<String> = emptyList(),
+	val inbox: List<InboxItem> = emptyList(),
+	val others: List<String> = emptyList()
+)
+
+/** How two people's listening overlaps: [score] 0..100, shared [artists] (most shared first); [enough]: both have plays. */
+@Serializable
+data class TasteMatch(val score: Int = 0, val artists: List<String> = emptyList(), val enough: Boolean = false)
+
+/** The reactions Svirka takes (it refuses others). */
+val REACTIONS = listOf("❤️", "🔥", "😂", "😭", "🙌", "👀")
 
 /** User [from] invites this user to Jam [id], hosted by [host]. */
 @Serializable
@@ -120,9 +166,6 @@ private data class ApiError(val error: String? = null)
 
 @Serializable
 private data class Me(val admin: Boolean = false)
-
-@Serializable
-private data class FollowBody(val user: String, val follow: Boolean)
 
 @Serializable
 private data class HubTheme(val palette: String = "ocean", val mode: String = "")
@@ -158,7 +201,9 @@ class ConnectManager(
 	private val snackBar: SnackBarManager,
 	private val deviceName: String,
 	/** Shows a Jam invite ([text], the Jam's [link]) as a system notification; false: not now, the snack bar has it. */
-	private val notifyInvite: (text: String, link: String) -> Boolean = { _, _ -> false }
+	private val notifyInvite: (text: String, link: String) -> Boolean = { _, _ -> false },
+	/** The same for a song or reaction a friend sent ([text], [id]); its tap opens Friends. */
+	private val notifyInbox: (text: String, id: String) -> Boolean = { _, _ -> false }
 ) {
 	val deviceId: String = settings.getStringOrNull("connectDeviceId")
 		?: Uuid.random().toString().also { settings["connectDeviceId"] = it }
@@ -170,6 +215,16 @@ class ConnectManager(
 	/** The Jam this user is in (hosting or as a guest), kept current by the `jam` event; null when in none. */
 	val jam: StateFlow<JamView?>
 		field = MutableStateFlow<JamView?>(null)
+
+	/** The last song or reaction a friend sent while connected (Friends refreshes on it). */
+	val lastInbox: StateFlow<InboxItem?>
+		field = MutableStateFlow<InboxItem?>(null)
+
+	/** Set to open Friends (a tapped inbox notification or snack bar); the app resets it. */
+	val openFriends = MutableStateFlow(false)
+
+	/** Hosting a Jam: who queued which song (by id), kept for the state reports. */
+	private val addedBy = mutableMapOf<String, String>()
 
 	private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 	private val json = Json { ignoreUnknownKeys = true }
@@ -198,12 +253,56 @@ class ConnectManager(
 		return client.get("$base/api/connect/friends?$auth&q=${query.encodeURLParameter()}").body()
 	}
 
-	suspend fun follow(user: String, on: Boolean, query: String = ""): Friends {
+	suspend fun follow(user: String, on: Boolean, query: String = "") = postFriends(query) {
+		put("user", user)
+		put("follow", on)
+	}
+
+	/** [mode]: "hour" hides what this user plays for 60 min, "on" until turned off, "off" shares it again. */
+	suspend fun setPrivate(mode: String, query: String = "") = postFriends(query) { put("private", mode) }
+
+	suspend fun dismiss(inboxId: String, query: String = "") = postFriends(query) { put("dismiss", inboxId) }
+
+	/** Sends [to] a song, or with [emoji] a reaction to it; the snack bar says how it went. */
+	fun send(to: String, song: ConnectSong, emoji: String? = null) {
+		scope.launch {
+			try {
+				postFriends("") {
+					put("send", buildJsonObject {
+						put("to", to)
+						put("song", json.encodeToJsonElement(song.copy(addedBy = null)))
+						emoji?.let { put("emoji", it) }
+					})
+				}
+				snackBar.notify(if (emoji == null) Res.string.friends_sent else Res.string.friends_reacted, to)
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				snackBar.notify(Res.string.jam_error, e.message ?: "Couldn't reach Svirka")
+			}
+		}
+	}
+
+	/** Throws the server's reason when it says no. */
+	suspend fun compare(user: String): TasteMatch {
 		awaitAuth()
-		return client.post("$base/api/connect/friends?$auth&q=${query.encodeURLParameter()}") {
+		val res = client.get("$base/api/connect/friends?$auth&compare=${user.encodeURLParameter()}")
+		if (!res.status.isSuccess()) error(runCatching { res.body<ApiError>().error }.getOrNull() ?: "Couldn't compare")
+		return res.body()
+	}
+
+	/** A song a friend plays or sent, as it is in this phone's library; null when it hasn't synced here (yet). */
+	suspend fun librarySong(song: ConnectSong): DomainSong? = collections.getSongById(song.id)
+
+	/** POST /api/connect/friends; answers the friend list like [friends], or throws the server's reason. */
+	private suspend fun postFriends(query: String, body: JsonObjectBuilder.() -> Unit): Friends {
+		awaitAuth()
+		val res = client.post("$base/api/connect/friends?$auth&q=${query.encodeURLParameter()}") {
 			contentType(ContentType.Application.Json)
-			setBody(FollowBody(user, on))
-		}.body()
+			setBody(buildJsonObject(body))
+		}
+		if (!res.status.isSuccess()) error(runCatching { res.body<ApiError>().error }.getOrNull() ?: "Svirka said no")
+		return res.body()
 	}
 
 	/** Svirka feedback (Settings): [message] goes to the server's admin. True when the server took it. */
@@ -270,6 +369,12 @@ class ConnectManager(
 
 	/** A guest leaves; the host ends the Jam for everyone. */
 	fun leaveJam() = jamAction("leave")
+
+	/** Host only: false leaves guests only adding songs, not playing/pausing/skipping/seeking. */
+	fun jamGuestsControl(on: Boolean) = jamAction("settings") { put("guestsControl", on) }
+
+	/** Host only: [user] leaves the Jam. */
+	fun removeFromJam(user: String) = jamAction("remove") { put("user", user) }
 
 	/** While this phone plays along: play/pause/next/prev/seek (seconds) go to the host. */
 	fun jamControl(cmd: String, value: Double? = null) = jamAction("control") {
@@ -399,6 +504,7 @@ class ConnectManager(
 							"theme" -> applyHubTheme(json.decodeFromString(data))
 							"jam" -> jam.value = json.decodeFromString<JamView?>(data)
 							"invite" -> invited(json.decodeFromString(data))
+							"inbox" -> received(json.decodeFromString(data))
 						}
 					}
 				}
@@ -476,8 +582,21 @@ class ConnectManager(
 		}
 	}
 
+	private fun received(item: InboxItem) {
+		lastInbox.value = item
+		val song = "${item.song.title} — ${item.song.artist}"
+		val (text, args) = if (item.emoji == null) Res.string.inbox_share to arrayOf(item.from, song)
+		else Res.string.inbox_reaction to arrayOf(item.from, item.emoji, song)
+		scope.launch {
+			if (!notifyInbox(getString(text, *args), item.id))
+				snackBar.notifyWithAction(text, Res.string.inbox_view, { openFriends.value = true }, *args)
+		}
+	}
+
 	/** Hosting a Jam: a guest added [added] to our queue. */
 	private suspend fun enqueue(added: List<ConnectSong>, from: String, next: Boolean) {
+		// ponytail: by song id, so the same song queued twice shows the last guest's name
+		added.forEach { addedBy[it.id] = it.addedBy ?: from }
 		val songs = added.mapNotNull { collections.getSongById(it.id) }
 		if (songs.isEmpty()) return
 		if (next) player.playNext(songs, notify = false)
@@ -490,22 +609,13 @@ class ConnectManager(
 		val s = player.uiState.value
 		val song = s.currentSong
 		return ConnectState(
-			queue = s.queue.map { it.toConnect() },
+			queue = s.queue.map { it.toConnect().copy(addedBy = addedBy[it.id]) },
 			index = s.currentIndex,
 			playing = song != null && !s.isPaused,
 			position = (song?.duration?.inWholeMilliseconds ?: 0) / 1000.0 * s.progress,
 			volume = player.volume?.toDouble()
 		)
 	}
-
-	private fun DomainSong.toConnect() = ConnectSong(
-		id = id,
-		title = title,
-		artist = artistName,
-		album = albumTitle.orEmpty(),
-		coverArt = coverArtId,
-		duration = duration.inWholeMilliseconds / 1000.0
-	)
 
 	private var lastReport: Pair<List<Any?>, ConnectState>? = null
 
@@ -535,3 +645,12 @@ class ConnectManager(
 		}
 	}
 }
+
+fun DomainSong.toConnect() = ConnectSong(
+	id = id,
+	title = title,
+	artist = artistName,
+	album = albumTitle.orEmpty(),
+	coverArt = coverArtId,
+	duration = duration.inWholeMilliseconds / 1000.0
+)

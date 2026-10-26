@@ -32,11 +32,15 @@ class MainActivity : ComponentActivity() {
 		handleJamLink(intent)
 	}
 
-	/** A shared Jam link, https://music.bencit.com/jam/<id>: join it, playing along on this phone. */
+	/**
+	 * A shared Jam link, https://music.bencit.com/jam/<id>: join it, playing along on this phone.
+	 * …/friends (a tapped notification of a song a friend sent): open Friends.
+	 */
 	private fun handleJamLink(intent: Intent?) {
 		if (intent?.action != Intent.ACTION_VIEW) return
 		val path = intent.data?.pathSegments ?: return
 		if (path.size == 2 && path[0] == "jam") connectManager.joinJam(path[1])
+		if (path == listOf("friends")) connectManager.openFriends.value = true
 	}
 
 	/** "Share → Navic" from YouTube/Spotify/…: hand the text to the link-import screen. */

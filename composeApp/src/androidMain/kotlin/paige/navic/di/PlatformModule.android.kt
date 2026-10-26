@@ -67,7 +67,7 @@ actual val platformModule = module {
 		val name = Settings.Global.getString(androidApplication().contentResolver, Settings.Global.DEVICE_NAME)
 			?: Build.MODEL
 		val invites = JamInviteNotifier(androidApplication(), get<ResourceProvider>().icNavic)
-		ConnectManager(get(), get(), get(), get(), get(), name, invites::show).apply { start() }
+		ConnectManager(get(), get(), get(), get(), get(), name, invites::show, invites::showInbox).apply { start() }
 	}
 
 	singleOf(::ShareManager)

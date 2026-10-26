@@ -92,6 +92,8 @@ import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.nowPlaying.viewmodels.NowPlayingViewModel
 import paige.navic.ui.screens.settings.viewmodels.NavtabsViewModel
 import paige.navic.ui.svirka.SvirkaIcons
+import paige.navic.ui.svirka.SvirkaJamButton
+import paige.navic.ui.svirka.jamLocksControls
 import paige.navic.ui.svirka.SvirkaLikeButton
 import paige.navic.ui.svirka.SvirkaShapes
 import paige.navic.ui.svirka.SvirkaText
@@ -156,20 +158,22 @@ fun MiniPlayer(
 	val hasSong = song != null
 	val isRadio = song?.id?.startsWith("radio_") == true
 	val isInteractive = enabled && hasSong
+	// Svirka Jam guest whose host keeps the controls: only adding songs works
+	val controls = isInteractive && !jamLocksControls()
 
 	Swiper(
 		onSwipeLeft = {
-			if (isInteractive) player.next()
+			if (controls) player.next()
 		},
 		onSwipeRight = {
-			if (isInteractive) player.previous()
+			if (controls) player.previous()
 		},
 		swipeLeftAccessibilityLabel = stringResource(Res.string.action_previous_song),
 		swipeRightAccessibilityLabel = stringResource(Res.string.action_next_song),
 		modifier = modifier.then(if (detached) {
 			Modifier.windowInsetsPadding(windowInsets)
 		} else Modifier),
-		enabled = isInteractive
+		enabled = controls
 	) {
 		Box(
 			modifier = Modifier
@@ -275,6 +279,7 @@ fun MiniPlayer(
 						verticalAlignment = Alignment.CenterVertically,
 						horizontalArrangement = Arrangement.spacedBy(4.dp)
 					) {
+						SvirkaJamButton()
 						if (hasSong && !isRadio) {
 							SvirkaLikeButton(
 								liked = songIsStarred,
@@ -289,7 +294,7 @@ fun MiniPlayer(
 									player.pause()
 								}
 							},
-							enabled = isInteractive,
+							enabled = controls,
 							shape = CircleShape,
 							colors = IconButtonDefaults.filledIconButtonColors(
 								containerColor = MaterialTheme.colorScheme.primary,
@@ -311,7 +316,7 @@ fun MiniPlayer(
 							onClick = {
 								player.next()
 							},
-							enabled = isInteractive
+							enabled = controls
 						) {
 							Icon(
 								imageVector = Icons.Filled.SkipNext,
@@ -373,7 +378,7 @@ fun MiniPlayer(
 							.then(
 								if (song != null
 									&& preferenceManager.miniPlayerProgressStyle == MiniPlayerProgressStyle.Seekable
-									&& isInteractive
+									&& controls
 								)
 									Modifier.pointerInput(Unit) {
 										detectDragGestures(

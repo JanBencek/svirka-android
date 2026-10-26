@@ -62,7 +62,9 @@ fun QueueScreenItem(
 	onClick: () -> Unit,
 	onRemove: () -> Unit,
 	isOffline: Boolean = false,
-	isDownloaded: Boolean = false
+	isDownloaded: Boolean = false,
+	/** Svirka Jam: the guest who queued it. */
+	addedBy: String? = null
 ) {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val isExplicit = song.explicitStatus == DomainExplicitStatus.Explicit
@@ -123,6 +125,7 @@ fun QueueScreenItem(
 					showYear = false
 				),
 				isCurrent = isSelected,
+				note = addedBy?.let { "Added by $it" },
 				onClick = onClick,
 				onLongClick = null,
 				enabled = !isExplicit,

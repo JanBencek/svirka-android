@@ -68,6 +68,8 @@ fun SvirkaTrackRow(
 	duration: Duration? = null,
 	durationStyle: TextStyle = SvirkaText.Tabular,
 	background: Color = MaterialTheme.colorScheme.surface,
+	/** A third line, e.g. "Added by …" in a Jam's queue. */
+	note: String? = null,
 	leading: @Composable () -> Unit,
 	trailing: @Composable () -> Unit = {}
 ) {
@@ -100,6 +102,9 @@ fun SvirkaTrackRow(
 				maxLines = 1,
 				overflow = TextOverflow.Ellipsis
 			)
+			note?.let {
+				Text(it, style = SvirkaText.Small, color = mutedColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
+			}
 		}
 		Row(
 			modifier = Modifier.padding(start = 8.dp),

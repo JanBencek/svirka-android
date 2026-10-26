@@ -25,6 +25,7 @@ import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.models.settings.NowPlayingSliderStyle
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.components.common.SlimSlider
+import paige.navic.ui.svirka.jamLocksControls
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +33,7 @@ fun NowPlayingProgressBar() {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val player = koinInject<MediaPlayerViewModel>()
 	val playerState by player.uiState.collectAsState()
-	val enabled = playerState.currentSong != null
+	val enabled = playerState.currentSong != null && !jamLocksControls() // Svirka Jam guest without control
 	val waveHeight by animateDpAsState(
 		if (!playerState.isPaused)
 			6.dp

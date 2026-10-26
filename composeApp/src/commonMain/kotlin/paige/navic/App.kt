@@ -65,6 +65,7 @@ import org.jetbrains.compose.resources.getString
 import org.koin.compose.koinInject
 import paige.navic.di.initializeSingletonImageLoader
 import paige.navic.domain.manager.BottomBarScrollManager
+import paige.navic.domain.manager.ConnectManager
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.ImportManager
 import paige.navic.domain.manager.SessionManager
@@ -112,6 +113,7 @@ import paige.navic.ui.screens.settings.SettingsThemesScreen
 import paige.navic.ui.screens.share.ShareListScreen
 import paige.navic.ui.screens.importLink.ImportScreen
 import paige.navic.ui.svirka.FriendsScreen
+import paige.navic.ui.svirka.openFriends
 import paige.navic.ui.screens.song.SongDetailScreen
 import paige.navic.ui.screens.song.SongDetailSheet
 import paige.navic.ui.screens.song.SongListScreen
@@ -183,6 +185,15 @@ fun App() {
 		if (!isLoggedIn) return@LaunchedEffect
 		importManager.pendingShare.value = null
 		backStack.add(Screen.Import(text, nested = true))
+	}
+
+	// Svirka: a tapped notification (or snack bar) of a song a friend sent opens Friends.
+	val connectManager = koinInject<ConnectManager>()
+	val openFriends by connectManager.openFriends.collectAsStateWithLifecycle()
+	LaunchedEffect(openFriends, isLoggedIn) {
+		if (!openFriends || !isLoggedIn) return@LaunchedEffect
+		connectManager.openFriends.value = false
+		backStack.openFriends()
 	}
 
 	val density = LocalDensity.current

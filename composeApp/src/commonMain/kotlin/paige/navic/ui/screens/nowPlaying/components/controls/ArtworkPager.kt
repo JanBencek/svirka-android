@@ -32,6 +32,7 @@ import paige.navic.domain.models.settings.CoverArtTapAction
 import paige.navic.shared.MediaPlayerViewModel
 import paige.navic.ui.navigation.Screen
 import paige.navic.ui.screens.nowPlaying.components.NowPlayingArtwork
+import paige.navic.ui.svirka.jamLocksControls
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -89,7 +90,7 @@ fun NowPlayingArtworkPager(
 		},
 		state = pagerState,
 		contentPadding = PaddingValues(horizontal = if (isLandscape) 0.dp else 8.dp),
-		userScrollEnabled = preferenceManager.swipeToSkip,
+		userScrollEnabled = preferenceManager.swipeToSkip && !jamLocksControls(), // not as a Jam guest without control
 		overscrollEffect = null
 	) { page ->
 		val song = playerState.queue.getOrNull(page) ?: return@HorizontalPager
