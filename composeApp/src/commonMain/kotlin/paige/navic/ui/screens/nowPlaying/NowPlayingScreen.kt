@@ -1,6 +1,5 @@
 package paige.navic.ui.screens.nowPlaying
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,21 +21,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
+import androidx.navigationevent.DirectNavigationEventInput
+import androidx.navigationevent.NavigationEvent
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.action_lyrics
 import navic.composeapp.generated.resources.action_navigate_back
@@ -94,26 +94,44 @@ fun NowPlayingScreen() {
 		backStack.remove(Screen.NowPlaying)
 	}
 
-	// Swipe down to close: the page follows the finger, and past the threshold (or flung) it closes
-	val dragScope = rememberCoroutineScope()
-	val dragOffset = remember { Animatable(0f) }
-	val dismissDistance = with(LocalDensity.current) { 120.dp.toPx() }
+	// Swipe down to close is the back gesture turned on its side: it drives the same seekable transition, so the
+	// screen below shows through and the artwork shrinks back toward the mini player under the finger. Let go past
+	// a third of the way (or flick) and it closes; otherwise it springs back.
+	val dispatcher = LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
+	val swipeInput = remember { DirectNavigationEventInput() }
+	DisposableEffect(dispatcher) {
+		dispatcher?.addInput(swipeInput)
+		onDispose { dispatcher?.removeInput(swipeInput) }
+	}
+	var pageHeight by remember { mutableIntStateOf(1) }
+	var dragged by remember { mutableFloatStateOf(0f) }
+	var swiping by remember { mutableStateOf(false) }
 
 	Box(
 		Modifier
 			.fillMaxSize()
-			.offset { IntOffset(0, dragOffset.value.roundToInt()) }
+			.onSizeChanged { pageHeight = it.height.coerceAtLeast(1) }
 			.background(MaterialTheme.colorScheme.surface)
 			.draggable(
 				orientation = Orientation.Vertical,
+				enabled = dispatcher != null,
 				state = rememberDraggableState { delta ->
-					dragScope.launch {
-						dragOffset.snapTo((dragOffset.value + delta).coerceAtLeast(0f))
+					dragged = (dragged + delta).coerceAtLeast(0f)
+					if (!swiping && dragged > 0f) {
+						swiping = true
+						swipeInput.backStarted(NavigationEvent(swipeEdge = NavigationEvent.EDGE_NONE))
+					}
+					if (swiping) {
+						swipeInput.backProgressed(NavigationEvent(progress = (dragged / pageHeight).coerceIn(0f, 1f)))
 					}
 				},
 				onDragStopped = { velocity ->
-					if (dragOffset.value > dismissDistance || velocity > 2500f) animateToDismiss()
-					else dragOffset.animateTo(0f)
+					if (swiping) {
+						if (dragged / pageHeight > 0.3f || velocity > 2000f) swipeInput.backCompleted()
+						else swipeInput.backCancelled()
+					}
+					swiping = false
+					dragged = 0f
 				}
 			)
 	) {

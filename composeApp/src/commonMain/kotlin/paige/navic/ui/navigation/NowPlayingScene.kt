@@ -8,6 +8,7 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -54,7 +55,7 @@ import paige.navic.util.ui.rememberScreenCornerRadius
 /**
  * Now Playing itself is a full-screen page, not this sheet: a ModalBottomSheet draws in its own window, where
  * the mini player's cover can't be a shared element with the artwork. It slides up over the screen it was opened
- * from (which stays put underneath) while the cover morphs; back, predictive back or a swipe down reverse it.
+ * from (which stays put underneath) while the cover morphs; back, the back gesture or a swipe down reverse it.
  * The sheet below is still used for Lyrics.
  */
 @OptIn(ExperimentalAnimationApi::class) // KeepUntilTransitionsFinished
@@ -69,7 +70,8 @@ val nowPlayingTransitions = transitionSpec {
 		slideOutVertically(tween(400, easing = EmphasizedAccelerateEasing)) { it }
 	)
 } + predictivePopTransitionSpec {
-	ContentTransform(EnterTransition.None, slideOutVertically { it })
+	// linear, so while a gesture seeks it (the back gesture, or swiping the page down) the page stays under the finger
+	ContentTransform(EnterTransition.None, slideOutVertically(tween(400, easing = LinearEasing)) { it })
 }
 
 /** The mini player's cover and the Now Playing artwork of the same queue row: one element that morphs between them. */

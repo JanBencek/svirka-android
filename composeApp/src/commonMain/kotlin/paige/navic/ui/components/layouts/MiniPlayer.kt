@@ -210,7 +210,8 @@ fun MiniPlayer(
 								totalDrag += dragAmount
 							},
 							onDragEnd = {
-								if (totalDrag < -150f) {
+								// a short flick up is enough (density-independent, so it feels the same on every phone)
+								if (totalDrag < -40.dp.toPx()) {
 									onClick()
 								}
 								totalDrag = 0f
