@@ -206,7 +206,9 @@ fun LoginScreenContent(innerPadding: PaddingValues) {
 					Spacer(Modifier.height(16.dp))
 
 					Text(
-						text = "Sign in with your music server account",
+						// Svirka: SSO users sign in to the website with Authelia, which isn't their Navidrome password
+						text = "Sign in with your music server account. If you sign in to the website another way, " +
+							"this needs your music password — ask your admin for it.",
 						style = SvirkaText.Small,
 						color = mutedColor,
 						textAlign = TextAlign.Center,
