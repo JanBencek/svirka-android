@@ -2,6 +2,8 @@ package paige.navic.domain.manager
 
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.set
+import dev.zt64.subsonic.api.model.SubsonicErrorCode
+import dev.zt64.subsonic.api.model.SubsonicException
 import dev.zt64.subsonic.client.SubsonicAuth
 import dev.zt64.subsonic.client.SubsonicClient
 import io.ktor.client.plugins.UserAgent
@@ -66,9 +68,15 @@ class SessionManager(
 
 		try {
 			client.ping()
+		} catch (e: SubsonicException) {
+			// The server answered, so this isn't a connection problem
+			if (e.code == SubsonicErrorCode.WRONG_USERNAME_OR_PASSWORD) {
+				throw Exception("Wrong username or password.", e)
+			}
+			throw Exception("The server refused the login: ${e.message}", e)
 		} catch (e: Exception) {
 			throw Exception(
-				"Failed to connect to the instance. Please check your credentials and try again.",
+				"Failed to connect to the instance. Please check the address and try again.",
 				e
 			)
 		}
