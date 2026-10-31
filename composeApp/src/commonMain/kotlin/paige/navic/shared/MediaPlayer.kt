@@ -145,21 +145,24 @@ abstract class MediaPlayerViewModel(
 
 	private var autoFill: Job? = null
 
+	/** The random song [checkAndAutoFillQueue] queued last: songs the user adds go before it while it hasn't started. */
+	protected var autoFilled: DomainSong? = null
+
+	/** Whether a song plays after this one (in shuffle order on Android). */
+	protected open fun hasNextSong(): Boolean = uiState.value.let { it.queue.size - it.currentIndex > 1 }
+
 	/** Music never stops (like the Svirka web app): on the last song, a random one from the library is queued next. */
 	protected fun checkAndAutoFillQueue() {
 		// not in a Jam (the host's queue), not on repeat, and one at a time (playNow and the transition both ask)
 		if (!preferenceManager.autoFillQueue || jam != null || autoFill?.isActive == true) return
 
 		val state = uiState.value
-		if (state.queue.isEmpty() || state.repeatMode != 0) return
+		if (state.queue.isEmpty() || state.repeatMode != 0 || hasNextSong()) return
 
-		val remainingCount = state.queue.size - state.currentIndex
-
-		if (remainingCount <= 1) {
-			autoFill = viewModelScope.launch {
-				val randomSongs = songRepository.getRandomSongs(1)
-				addToQueue(randomSongs, notify = false)
-			}
+		autoFill = viewModelScope.launch {
+			val randomSongs = songRepository.getRandomSongs(1)
+			autoFilled = randomSongs.firstOrNull()
+			addToQueue(randomSongs, notify = false)
 		}
 	}
 
@@ -168,8 +171,9 @@ abstract class MediaPlayerViewModel(
 		if (!preferenceManager.autoFillQueue || jam != null || uiState.value.queue.isEmpty()) return
 		viewModelScope.launch {
 			val song = songRepository.getRandomSongs(1).firstOrNull() ?: return@launch
-			addToQueueSingle(song, notify = false)
-			playAt(uiState.value.queue.lastIndex)
+			// the queue ran dry, so it goes right after the current song (in shuffle order too)
+			addToQueue(listOf(song), notify = false)
+			playAt(uiState.value.currentIndex + 1)
 		}
 	}
 

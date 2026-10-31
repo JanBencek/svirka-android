@@ -766,21 +766,7 @@ class AndroidMediaPlayerViewModel(
 		}
 	}
 
-	override fun addToQueueSingle(song: DomainSong, notify: Boolean) {
-		if (addToJam(listOf(song))) return
-		viewModelScope.launch {
-			controller?.addMediaItem(song.toMediaItem())
-			_uiState.update { state ->
-				val newQueue = state.queue + song
-				state.copy(
-					queue = newQueue,
-					currentIndex = if (state.currentIndex == -1) 0 else state.currentIndex,
-					currentSong = if (state.currentIndex == -1) song else state.currentSong
-				)
-			}
-			if (notify) snackBarManager.notifyAddedToQueue()
-		}
-	}
+	override fun addToQueueSingle(song: DomainSong, notify: Boolean) = addToQueue(listOf(song), notify)
 
 	override fun addToQueue(collection: DomainSongCollection, notify: Boolean) {
 		addToQueue(
@@ -798,9 +784,10 @@ class AndroidMediaPlayerViewModel(
 		if (addToJam(songs)) return
 		viewModelScope.launch {
 			val items = songs.map { it.toMediaItem() }
-			controller?.addMediaItems(items)
+			val at = queueEnd()
+			controller?.addMediaItems(at, items)
 			_uiState.update { state ->
-				val newQueue = state.queue + songs
+				val newQueue = state.queue.take(at) + songs + state.queue.drop(at)
 				state.copy(
 					queue = newQueue,
 					currentIndex = if (state.currentIndex == -1) 0 else state.currentIndex,
@@ -810,6 +797,24 @@ class AndroidMediaPlayerViewModel(
 			if (notify) snackBarManager.notifyAddedToQueue()
 		}
 	}
+
+	/**
+	 * Where Add to queue puts songs: after the last one to play, in shuffle order too (QueueShuffleOrder plays them
+	 * after the song before them, so appending could land them among songs already played), but before an
+	 * auto-filled random song that hasn't started, so the user's songs play first.
+	 */
+	private fun queueEnd(): Int {
+		val player = controller ?: return _uiState.value.queue.size
+		val timeline = player.currentTimeline
+		if (timeline.isEmpty) return 0
+		val shuffle = player.shuffleModeEnabled
+		var last = timeline.getLastWindowIndex(shuffle)
+		if (last != player.currentMediaItemIndex && autoFilled != null && _uiState.value.queue.getOrNull(last) == autoFilled)
+			last = timeline.getPreviousWindowIndex(last, Player.REPEAT_MODE_OFF, shuffle)
+		return last + 1
+	}
+
+	override fun hasNextSong() = controller?.hasNextMediaItem() ?: super.hasNextSong()
 
 	override fun removeFromQueue(index: Int) {
 		viewModelScope.launch {
