@@ -24,6 +24,7 @@ import paige.navic.domain.models.settings.ExplicitContentPlayback
 import paige.navic.domain.repositories.PlayerStateRepository
 import paige.navic.domain.repositories.SongRepository
 import paige.navic.ui.core.PlayerUiState
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
 abstract class MediaPlayerViewModel(
@@ -71,7 +72,44 @@ abstract class MediaPlayerViewModel(
 	abstract fun shufflePlay(collection: DomainSongCollection)
 	abstract fun setPlaybackSpeed(value: Float)
 
+	/* ---- Diagnostics: the player's recent queue events, sent to the Svirka server (POST /api/diagnostics) when a
+	   random song is queued or starts, so an odd queue can be explained afterwards. ---- */
+
+	/** Set by ConnectManager (which owns the server login): sends [event] with a snapshot and the trail. */
+	var sendDiagnostic: ((event: String, detail: Map<String, String>, trail: List<String>) -> Unit)? = null
+
+	private val trail = ArrayDeque<String>()
+
+	/** One line of the trail (the last 60 are kept). */
+	protected fun trace(event: String) {
+		trail.addLast("${Clock.System.now().toString().drop(11).take(12)} $event")
+		while (trail.size > 60) trail.removeFirst()
+	}
+
+	/** The queue as this player sees it; the Android player adds what its MediaController plays. */
+	protected open fun snapshot(): Map<String, String> = uiState.value.let { state ->
+		mapOf(
+			"index" to "${state.currentIndex} of ${state.queue.size}",
+			"now" to (state.currentSong?.title ?: "-"),
+			"queue" to state.queue.mapIndexed { i, s -> if (i == state.currentIndex) "> ${s.title}" else s.title }.joinToString(" | ").take(3000),
+			"shuffle" to "${state.isShuffleEnabled}",
+			"repeat" to "${state.repeatMode}",
+			"autoFilled" to (autoFilled?.title ?: "-"),
+			"jam" to "${jam != null}",
+		)
+	}
+
+	protected fun report(event: String, extra: Map<String, String> = emptyMap()) {
+		trace(event)
+		val send = sendDiagnostic ?: return
+		runCatching { send(event, snapshot() + extra, trail.toList()) }
+	}
+
+	protected fun titles(songs: List<DomainSong>) =
+		songs.take(5).joinToString(", ") { it.title } + if (songs.size > 5) " (+${songs.size - 5})" else ""
+
 	fun playNow(song: DomainSong) {
+		trace("play now: ${song.title}${if (jam != null) " (to the Jam)" else ""}")
 		if (addToJam(listOf(song))) return
 		clearQueue()
 		addToQueueSingle(song, notify = false)
@@ -80,6 +118,7 @@ abstract class MediaPlayerViewModel(
 	}
 
 	fun playNow(collection: DomainSongCollection, startIndex: Int = 0) {
+		trace("play now: ${collection.songs.getOrNull(startIndex)?.title} (${startIndex + 1} of ${collection.songs.size})")
 		if (addToJam(listOfNotNull(collection.songs.getOrNull(startIndex)))) return
 		clearQueue()
 		addToQueue(collection, notify = false)
@@ -88,6 +127,7 @@ abstract class MediaPlayerViewModel(
 	}
 
 	fun playNow(songs: List<DomainSong>, startIndex: Int = 0) {
+		trace("play now: ${songs.getOrNull(startIndex)?.title} (${startIndex + 1} of ${songs.size})")
 		if (addToJam(listOfNotNull(songs.getOrNull(startIndex)))) return
 		clearQueue()
 		addToQueue(songs, notify = false)
@@ -161,6 +201,7 @@ abstract class MediaPlayerViewModel(
 
 		autoFill = viewModelScope.launch {
 			val randomSongs = songRepository.getRandomSongs(1)
+			report("random-song", mapOf("why" to "last song playing: queued after it", "picked" to titles(randomSongs)))
 			autoFilled = randomSongs.firstOrNull()
 			addToQueue(randomSongs, notify = false)
 		}
@@ -171,6 +212,7 @@ abstract class MediaPlayerViewModel(
 		if (!preferenceManager.autoFillQueue || jam != null || uiState.value.queue.isEmpty()) return
 		viewModelScope.launch {
 			val song = songRepository.getRandomSongs(1).firstOrNull() ?: return@launch
+			report("random-song", mapOf("why" to "the queue ran out: plays now", "picked" to song.title))
 			// the queue ran dry, so it goes right after the current song (in shuffle order too)
 			addToQueue(listOf(song), notify = false)
 			playAt(uiState.value.currentIndex + 1)
@@ -183,6 +225,7 @@ abstract class MediaPlayerViewModel(
 			.firstOrNull()
 			?.copy(isPaused = true, isLoading = false)
 		if (savedState != null) {
+			trace("restored ${savedState.queue.size} songs at ${savedState.currentIndex}")
 			_uiState.value = savedState
 			syncPlayerWithState(savedState)
 			checkAndAutoFillQueue()

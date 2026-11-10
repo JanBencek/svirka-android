@@ -457,6 +457,9 @@ class AndroidMediaPlayerViewModel(
 			controller?.apply {
 				addListener(object : Player.Listener {
 					override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+						trace("now playing: ${mediaItem?.mediaMetadata?.title} (reason $reason)")
+						val song = _uiState.value.queue.getOrNull(controller?.currentMediaItemIndex ?: -1)
+						if (song != null && song == autoFilled) report("random-song-started")
 						updatePlaybackState()
 						skipUnavailableSong()
 						checkAndAutoFillQueue()
@@ -492,6 +495,7 @@ class AndroidMediaPlayerViewModel(
 						updatePlaybackState()
 						// the last song finished on its own (a cleared queue has no items; a replaced one was sought away from ENDED)
 						val player = controller ?: return
+						if (playbackState == Player.STATE_ENDED) trace("ended (${player.mediaItemCount} in the queue)")
 						if (player.playbackState == Player.STATE_ENDED && player.mediaItemCount > 0) playRandomSong()
 					}
 
@@ -785,6 +789,7 @@ class AndroidMediaPlayerViewModel(
 		viewModelScope.launch {
 			val items = songs.map { it.toMediaItem() }
 			val at = queueEnd()
+			trace("add to queue: ${titles(songs)} at $at (now ${controller?.currentMediaItemIndex} of ${controller?.mediaItemCount}, ui ${_uiState.value.queue.size})")
 			controller?.addMediaItems(at, items)
 			_uiState.update { state ->
 				val newQueue = state.queue.take(at) + songs + state.queue.drop(at)
@@ -816,7 +821,26 @@ class AndroidMediaPlayerViewModel(
 
 	override fun hasNextSong() = controller?.hasNextMediaItem() ?: super.hasNextSong()
 
+	/** Adds what the MediaController plays (its order can differ from the queue list's) to the snapshot. */
+	override fun snapshot(): Map<String, String> {
+		val player = controller ?: return super.snapshot() + ("controller" to "none")
+		val timeline = player.currentTimeline
+		val order = buildList {
+			var i = timeline.getFirstWindowIndex(player.shuffleModeEnabled)
+			while (i != C.INDEX_UNSET && size < 200) {
+				val title = player.getMediaItemAt(i).mediaMetadata.title
+				add(if (i == player.currentMediaItemIndex) "> $title" else "$title")
+				i = timeline.getNextWindowIndex(i, Player.REPEAT_MODE_OFF, player.shuffleModeEnabled)
+			}
+		}
+		return super.snapshot() + mapOf(
+			"player" to "${player.currentMediaItemIndex} of ${player.mediaItemCount}, playing ${player.isPlaying}, state ${player.playbackState}",
+			"playOrder" to order.joinToString(" | ").take(3000),
+		)
+	}
+
 	override fun removeFromQueue(index: Int) {
+		trace("remove ${_uiState.value.queue.getOrNull(index)?.title} at $index")
 		viewModelScope.launch {
 			controller?.removeMediaItem(index)
 			_uiState.update { state ->
@@ -839,6 +863,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+		trace("move $fromIndex to $toIndex")
 		viewModelScope.launch {
 			controller?.moveMediaItem(fromIndex, toIndex)
 			_uiState.update { state ->
@@ -862,6 +887,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun clearQueue() {
+		trace("clear queue")
 		if (jam != null) return
 		viewModelScope.launch {
 			_uiState.update {
@@ -877,6 +903,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun playAt(index: Int) {
+		trace("play at $index")
 		if (jam != null) {
 			// in a Jam: swiping the artwork to the neighbouring song skips there on the host's side
 			when (index - _uiState.value.currentIndex) {
@@ -909,6 +936,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun replaceQueue(songs: List<DomainSong>, index: Int) {
+		trace("replace queue: ${songs.size} songs at $index")
 		val player = controller ?: return
 		val current = player.currentMediaItemIndex
 		if (current == C.INDEX_UNSET || index !in songs.indices) return
@@ -926,6 +954,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun playNextSingle(song: DomainSong) {
+		trace("play next: ${song.title}")
 		if (addToJam(listOf(song), next = true)) return
 		viewModelScope.launch {
 			controller?.addMediaItem(
@@ -957,6 +986,7 @@ class AndroidMediaPlayerViewModel(
 	)
 
 	override fun playNext(songs: List<DomainSong>, notify: Boolean) {
+		trace("play next: ${titles(songs)}")
 		if (addToJam(songs, next = true)) return
 		viewModelScope.launch {
 			val items = withContext(Dispatchers.Default) { songs.map { it.toMediaItem() } }
@@ -1096,6 +1126,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun next() {
+		trace("next")
 		if (toJam("next")) return
 		viewModelScope.launch(Dispatchers.Main.immediate) {
 			val controller = controller ?: return@launch
@@ -1104,6 +1135,7 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun previous() {
+		trace("previous")
 		if (toJam("prev")) return
 		viewModelScope.launch(Dispatchers.Main.immediate) {
 			val controller = controller ?: return@launch

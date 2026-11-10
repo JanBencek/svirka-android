@@ -30,6 +30,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
@@ -203,7 +205,9 @@ class ConnectManager(
 	/** Shows a Jam invite ([text], the Jam's [link]) as a system notification; false: not now, the snack bar has it. */
 	private val notifyInvite: (text: String, link: String) -> Boolean = { _, _ -> false },
 	/** The same for a song or reaction a friend sent ([text], [id]); its tap opens Friends. */
-	private val notifyInbox: (text: String, id: String) -> Boolean = { _, _ -> false }
+	private val notifyInbox: (text: String, id: String) -> Boolean = { _, _ -> false },
+	/** versionName ("build-N"), sent with diagnostics. */
+	private val appVersion: String = ""
 ) {
 	val deviceId: String = settings.getStringOrNull("connectDeviceId")
 		?: Uuid.random().toString().also { settings["connectDeviceId"] = it }
@@ -240,6 +244,7 @@ class ConnectManager(
 	private var connected = false
 
 	fun start() {
+		player.sendDiagnostic = ::sendDiagnostic
 		scope.launch { connectLoop() }
 		scope.launch { reportLoop() }
 		scope.launch { jam.collectLatest { followJam(it) } }
@@ -303,6 +308,31 @@ class ConnectManager(
 		}
 		if (!res.status.isSuccess()) error(runCatching { res.body<ApiError>().error }.getOrNull() ?: "Svirka said no")
 		return res.body()
+	}
+
+	/** The player's diagnostics (MediaPlayerViewModel.report) to the server; a lost one is fine. */
+	private fun sendDiagnostic(event: String, detail: Map<String, String>, trail: List<String>) {
+		scope.launch {
+			try {
+				awaitAuth()
+				client.post("$base/api/diagnostics?$auth") {
+					contentType(ContentType.Application.Json)
+					setBody(buildJsonObject {
+						put("app", "android")
+						put("version", appVersion.take(40))
+						put("device", deviceName.take(120))
+						put("event", event)
+						put("detail", buildJsonObject {
+							detail.forEach { (k, v) -> put(k, v) }
+							put("trail", JsonArray(trail.map(::JsonPrimitive)))
+						})
+					})
+				}
+			} catch (e: CancellationException) {
+				throw e
+			} catch (_: Exception) {
+			}
+		}
 	}
 
 	/** Svirka feedback (Settings): [message] goes to the server's admin. True when the server took it. */
