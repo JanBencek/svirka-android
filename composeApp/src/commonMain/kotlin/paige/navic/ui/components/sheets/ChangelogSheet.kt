@@ -23,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import com.kyant.capsule.ContinuousCapsule
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -35,27 +37,29 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import navic.composeapp.generated.resources.Res
-import navic.composeapp.generated.resources.action_dont_show_again
-import navic.composeapp.generated.resources.action_update_app
+import navic.composeapp.generated.resources.action_open_release_page
+import navic.composeapp.generated.resources.action_skip_update
+import navic.composeapp.generated.resources.action_update_to
 import navic.composeapp.generated.resources.info_downloading_update
 import navic.composeapp.generated.resources.info_update
+import navic.composeapp.generated.resources.info_update_failed
 import navic.composeapp.generated.resources.title_update
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
 import paige.navic.LocalPlatformContext
 import paige.navic.domain.manager.PreferenceManager
 import paige.navic.domain.manager.UpdateManager
 import paige.navic.ui.components.common.Markdown
 import paige.navic.ui.theme.defaultFont
 import paige.navic.util.core.Logger
-import paige.navic.util.core.PlatformContext
 
 @Serializable
 data class GitHubRelease(
@@ -64,11 +68,12 @@ data class GitHubRelease(
 	@SerialName("body") val body: String
 )
 
-class ChangelogViewModel(
-	platformContext: PlatformContext
-) : ViewModel() {
-	val release: StateFlow<GitHubRelease?>
-		field = MutableStateFlow(null)
+/**
+ * Svirka self-update, shared by the update sheet at start-up and Settings → About: the newest release when it's newer
+ * than this build, and the in-app download of it.
+ */
+class UpdateChecker(private val updateManager: UpdateManager) {
+	private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
 	private val updateClient = HttpClient {
 		install(ContentNegotiation) {
@@ -76,52 +81,61 @@ class ChangelogViewModel(
 		}
 	}
 
-	init {
-		checkForUpdates(platformContext.appVersion)
-	}
+	/** The latest release when it's newer than this build; null otherwise (or not checked yet). */
+	val release: StateFlow<GitHubRelease?>
+		field = MutableStateFlow(null)
 
-	fun checkForUpdates(currentVersion: String) {
-		viewModelScope.launch {
+	/** 0..1 while the update downloads; null otherwise. */
+	val progress: StateFlow<Float?>
+		field = MutableStateFlow(null)
+
+	/** Why the last in-app update failed (then the release page is the way); null when it didn't. */
+	val error: StateFlow<String?>
+		field = MutableStateFlow(null)
+
+	private var checking = false
+
+	/** Asks GitHub once per app run (the sheet and About both call it). */
+	fun check(currentVersion: String) {
+		if (checking) return
+		checking = true
+		scope.launch {
 			release.value = try {
 				val release: GitHubRelease =
 					updateClient.get("https://api.github.com/repos/JanBencek/svirka-android/releases/latest")
 						.body()
 				val remoteVersion = release.tag
 					.filter { it.isDigit() }
-					.toIntOrNull() ?: return@launch
+					.toIntOrNull()
 				val localVersion = currentVersion
 					.filter { it.isDigit() }
-					.toIntOrNull() ?: return@launch
-				if (remoteVersion > localVersion || "$remoteVersion".length != "$localVersion".length)
-					release
-				else null
+					.toIntOrNull()
+				if (remoteVersion != null && localVersion != null &&
+					(remoteVersion > localVersion || "$remoteVersion".length != "$localVersion".length)
+				) release else null
+			} catch (e: CancellationException) {
+				throw e
 			} catch (e: Exception) {
-				Logger.e("ChangelogViewModel", "couldn't check for updates", e)
+				Logger.e("UpdateChecker", "couldn't check for updates", e)
+				checking = false // try again next time
 				null
 			}
 		}
 	}
 
-	fun clearRelease() {
-		release.value = null
-	}
-
-	/** 0..1 while the update downloads; null otherwise. */
-	val progress: StateFlow<Float?>
-		field = MutableStateFlow(null)
-
-	/** Download the new APK and hand it to the installer; [openReleasePage] where that can't happen. */
-	fun update(updateManager: UpdateManager, openReleasePage: () -> Unit) {
+	/** Download the new APK and hand it to the installer; [openReleasePage] where the platform can't (iOS). */
+	fun update(openReleasePage: () -> Unit) {
 		if (progress.value != null) return
-		viewModelScope.launch {
+		scope.launch {
 			progress.value = 0f
+			error.value = null
 			try {
 				if (!updateManager.install(APK_URL) { progress.value = it }) openReleasePage()
 			} catch (e: CancellationException) {
 				throw e
 			} catch (e: Exception) {
-				Logger.e("ChangelogViewModel", "couldn't download the update", e)
-				openReleasePage()
+				Logger.e("UpdateChecker", "couldn't download the update", e)
+				error.value = e.message?.takeIf { it.isNotBlank() } ?: e::class.simpleName ?: "unknown error"
 			}
 			progress.value = null
 		}
@@ -132,22 +146,55 @@ class ChangelogViewModel(
 	}
 }
 
+/** The Update button and what goes with it: progress, why it failed, then the release page instead. */
+@Composable
+fun UpdateButton(release: GitHubRelease, modifier: Modifier = Modifier) {
+	val checker = koinInject<UpdateChecker>()
+	val uriHandler = LocalUriHandler.current
+	val progress by checker.progress.collectAsStateWithLifecycle()
+	val error by checker.error.collectAsStateWithLifecycle()
+	Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+		Button(
+			onClick = {
+				if (error != null) uriHandler.openUri(release.url)
+				else checker.update { uriHandler.openUri(release.url) }
+			},
+			enabled = progress == null,
+			modifier = Modifier.fillMaxWidth(),
+			shape = ContinuousCapsule
+		) {
+			Text(
+				text = progress?.let {
+					stringResource(Res.string.info_downloading_update, "${(it * 100).toInt()}%")
+				} ?: if (error != null) stringResource(Res.string.action_open_release_page)
+				else stringResource(Res.string.action_update_to, release.tag),
+				fontFamily = defaultFont(100)
+			)
+		}
+		error?.let {
+			Text(
+				stringResource(Res.string.info_update_failed, it),
+				style = MaterialTheme.typography.bodySmall,
+				color = MaterialTheme.colorScheme.error,
+				modifier = Modifier.padding(top = 4.dp)
+			)
+		}
+	}
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangelogSheet() {
 	val preferenceManager = koinInject<PreferenceManager>()
 	val platformContext = LocalPlatformContext.current
-	val uriHandler = LocalUriHandler.current
-	val viewModel = koinViewModel<ChangelogViewModel>(
-		parameters = { parametersOf(platformContext) }
-	)
-	val release by viewModel.release.collectAsStateWithLifecycle()
-	val progress by viewModel.progress.collectAsStateWithLifecycle()
-	val updateManager = koinInject<UpdateManager>()
+	val checker = koinInject<UpdateChecker>()
+	LaunchedEffect(Unit) { checker.check(platformContext.appVersion) }
+	val release by checker.release.collectAsStateWithLifecycle()
+	var dismissed by rememberSaveable { mutableStateOf(false) }
 
-	release?.let { release ->
+	release?.takeIf { !dismissed && it.tag != preferenceManager.skippedUpdate }?.let { release ->
 		ModalBottomSheet(
-			onDismissRequest = { viewModel.clearRelease() },
+			onDismissRequest = { dismissed = true },
 			sheetState = rememberBottomSheetState(
 				initialValue = SheetValue.Hidden,
 				enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
@@ -190,35 +237,19 @@ fun ChangelogSheet() {
 				Spacer(Modifier.height(8.dp))
 				Spacer(Modifier.weight(1f))
 
-				Button(
-					onClick = {
-						viewModel.update(updateManager) {
-							viewModel.clearRelease()
-							uriHandler.openUri(release.url)
-						}
-					},
-					enabled = progress == null,
-					modifier = Modifier.fillMaxWidth(),
-					shape = ContinuousCapsule
-				) {
-					Text(
-						text = progress?.let {
-							stringResource(Res.string.info_downloading_update, "${(it * 100).toInt()}%")
-						} ?: stringResource(Res.string.action_update_app),
-						fontFamily = defaultFont(100)
-					)
-				}
+				UpdateButton(release, Modifier.fillMaxWidth())
 
+				// skips this build only: the next one asks again, and Settings → About still offers this one
 				OutlinedButton(
 					onClick = {
-						viewModel.clearRelease()
-						preferenceManager.checkForUpdates = false
+						preferenceManager.skippedUpdate = release.tag
+						dismissed = true
 					},
 					modifier = Modifier.fillMaxWidth(),
 					shape = ContinuousCapsule
 				) {
 					Text(
-						text = stringResource(Res.string.action_dont_show_again),
+						text = stringResource(Res.string.action_skip_update),
 						fontFamily = defaultFont(100)
 					)
 				}

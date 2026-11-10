@@ -30,6 +30,10 @@
 	<string name="feedback_sent">Thanks for the feedback!</string>
 	<string name="feedback_error">Couldn\'t send feedback. Try again later.</string>
 	<string name="info_downloading_update">Downloading… %1$s</string>
+	<string name="action_update_to">Update to %1$s</string>
+	<string name="action_skip_update">Skip this update</string>
+	<string name="action_open_release_page">Open the release page</string>
+	<string name="info_update_failed">Couldn't update in the app (%1$s). Get it from the release page instead.</string>
 	<string name="title_change_password">Change password</string>
 	<string name="subtitle_change_password">Your Svirka password</string>
 	<string name="password_current">Current password</string>

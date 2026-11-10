@@ -5,7 +5,7 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 import paige.navic.domain.models.DomainSong
 import paige.navic.ui.components.dialogs.DeletionViewModel
-import paige.navic.ui.components.sheets.ChangelogViewModel
+import paige.navic.ui.components.sheets.UpdateChecker
 import paige.navic.ui.screens.album.viewmodels.AlbumListViewModel
 import paige.navic.ui.screens.artist.viewmodels.ArtistDetailViewModel
 import paige.navic.ui.screens.artist.viewmodels.ArtistListViewModel
@@ -96,7 +96,7 @@ val viewModelModule = module {
 	}
 	viewModelOf(::SongDetailViewModel)
 	viewModelOf(::SettingsDataStorageViewModel)
-	viewModelOf(::ChangelogViewModel)
+	single { UpdateChecker(get()) }
 	viewModel { params ->
 		NowPlayingViewModel(
 			player = params.get(),

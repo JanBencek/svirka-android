@@ -296,6 +296,12 @@ fun App() {
 					SideloadingDialog()
 				}
 				// version check is annoying to do on iOS
+				LaunchedEffect(Unit) {
+					if (!preferenceManager.updateChecksRestored) {
+						preferenceManager.updateChecksRestored = true
+						preferenceManager.checkForUpdates = true
+					}
+				}
 				if (preferenceManager.checkForUpdates && platformContext.platformType == PlatformType.Android) {
 					ChangelogSheet()
 				}

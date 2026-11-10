@@ -80,6 +80,8 @@ class PreferenceManager(
 	var nowPlayingCoverArtAction by preference(CoverArtTapAction.ShowLyrics)
 	var customHeaders by preference("")
 	var checkForUpdates by preference(true)
+	var skippedUpdate by preference("") // the release tag "Skip this update" was pressed on
+	var updateChecksRestored by preference(false) // the old "Don't show again" turned checks off for good: back on once
 	var explicitContentPlayback by preference(ExplicitContentPlayback.Allowed)
 	var autoFillQueue by preference(true) // Svirka: music never stops, like the web app
 

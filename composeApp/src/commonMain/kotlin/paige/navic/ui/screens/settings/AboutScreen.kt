@@ -1,6 +1,7 @@
 package paige.navic.ui.screens.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -10,19 +11,24 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import navic.composeapp.generated.resources.Res
 import navic.composeapp.generated.resources.info_app_version
+import navic.composeapp.generated.resources.info_update
 import navic.composeapp.generated.resources.title_about
 import navic.composeapp.generated.resources.title_acknowledgements
 import navic.composeapp.generated.resources.title_chat
 import navic.composeapp.generated.resources.title_source
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import paige.navic.LocalNavStack
 import paige.navic.LocalPlatformContext
 import paige.navic.icons.Icons
@@ -30,7 +36,10 @@ import paige.navic.icons.outlined.ChevronForward
 import paige.navic.ui.components.common.Form
 import paige.navic.ui.components.common.FormRow
 import paige.navic.ui.components.layouts.NestedTopBar
+import paige.navic.ui.components.sheets.UpdateButton
+import paige.navic.ui.components.sheets.UpdateChecker
 import paige.navic.ui.navigation.Screen
+import paige.navic.util.core.PlatformType
 
 @Composable
 fun SettingsAboutScreen() {
@@ -40,6 +49,11 @@ fun SettingsAboutScreen() {
 	val backStack = LocalNavStack.current
 	val platformContext = LocalPlatformContext.current
 	val hideBack = platformContext.sizeClass.widthSizeClass >= WindowWidthSizeClass.Medium
+	// a newer build, offered here even when the start-up sheet was skipped or update checks are off
+	val updates = koinInject<UpdateChecker>()
+	val android = platformContext.platformType == PlatformType.Android
+	LaunchedEffect(android) { if (android) updates.check(platformContext.appVersion) }
+	val release by updates.release.collectAsStateWithLifecycle()
 	Scaffold(
 		topBar = {
 			NestedTopBar(
@@ -69,6 +83,16 @@ fun SettingsAboutScreen() {
 						clipboard.setText(AnnotatedString(text))
 					}) {
 						Text(text)
+					}
+				}
+			}
+			release?.takeIf { android }?.let { newer ->
+				Form {
+					FormRow {
+						Column(Modifier.fillMaxWidth()) {
+							Text(stringResource(Res.string.info_update, newer.tag))
+							UpdateButton(newer, Modifier.fillMaxWidth().padding(top = 8.dp))
+						}
 					}
 				}
 			}
