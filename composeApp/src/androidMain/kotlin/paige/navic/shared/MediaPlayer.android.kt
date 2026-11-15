@@ -310,9 +310,7 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 	private fun makeEqualiser(sessionId: Int) {
 		equaliser?.release()
 		try {
-			val equaliser = Equalizer(0, sessionId).apply {
-				enabled = true
-			}
+			val equaliser = Equalizer(0, sessionId)
 
 			this.equaliser = equaliser
 
@@ -340,6 +338,9 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 		val equaliser = equaliser ?: return
 		val config = equaliserManager.config.value
 		try {
+			// a flat EQ stays off: an enabled effect on the session silences
+			// Bluetooth output on some phones
+			equaliser.enabled = config.bandLevels.values.any { it != 0f }
 			// reset all band levels first in case an item in
 			// config.bandLevels was removed (e.g. user presses
 			// reset in the equaliser settings)
