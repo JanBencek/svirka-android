@@ -4,6 +4,9 @@ import android.app.ActivityManager
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import androidx.annotation.OptIn
+import androidx.media3.cast.Cast
+import androidx.media3.common.util.UnstableApi
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.dsl.module
@@ -13,6 +16,7 @@ import paige.navic.util.core.ResourceProvider
 import kotlin.system.exitProcess
 
 class Application : android.app.Application() {
+	@OptIn(UnstableApi::class)
 	override fun onCreate() {
 		super.onCreate()
 
@@ -43,6 +47,9 @@ class Application : android.app.Application() {
 			androidContext(this@Application)
 			androidLogger()
 		}
+
+		// Chromecast / Google TV with Google's ready-made receiver (PlaybackService hands the queue to it)
+		Cast.getSingletonInstance(this).initialize()
 	}
 
 	private fun isCrashProcess(): Boolean {

@@ -42,6 +42,7 @@ import org.koin.compose.koinInject
 import paige.navic.domain.manager.ConnectDevice
 import paige.navic.domain.manager.ConnectManager
 import paige.navic.icons.Icons
+import paige.navic.ui.components.common.CastButton
 import paige.navic.icons.filled.Pause
 import paige.navic.icons.filled.Play
 import paige.navic.icons.filled.SkipNext
@@ -69,11 +70,14 @@ fun DevicesSheet(onDismissRequest: () -> Unit) {
 			modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
 			verticalArrangement = Arrangement.spacedBy(4.dp)
 		) {
-			Text(
-				text = stringResource(Res.string.connect_play_on),
-				style = MaterialTheme.typography.titleLarge,
-				modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-			)
+			Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 8.dp)) {
+				Text(
+					text = stringResource(Res.string.connect_play_on),
+					style = MaterialTheme.typography.titleLarge,
+					modifier = Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 8.dp)
+				)
+				CastButton() // a Chromecast / Google TV: the queue moves there
+			}
 			devices.sortedBy { it.id != connect.deviceId }.forEach { device ->
 				DeviceRow(
 					device = device,

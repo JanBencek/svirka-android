@@ -12,10 +12,15 @@ import androidx.annotation.OptIn
 import androidx.compose.runtime.snapshotFlow
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
+import androidx.media3.cast.CastPlayer
+import androidx.media3.cast.DefaultMediaItemConverter
+import androidx.media3.cast.MediaItemConverter
+import androidx.media3.cast.RemoteCastPlayer
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
@@ -37,6 +42,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
 import coil3.imageLoader
+import com.google.android.gms.cast.MediaQueueItem
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -157,7 +163,7 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 		val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
 		val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
 
-		val player = ExoPlayer.Builder(this)
+		val exoPlayer = ExoPlayer.Builder(this)
 			.setLoadControl(loadControl)
 			.setMediaSourceFactory(mediaSourceFactory)
 			.setHandleAudioBecomingNoisy(true)
@@ -189,6 +195,13 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 					).build()
 			}
 
+		// Plays here, or on a Chromecast / Google TV while a Cast session is on: the queue and position move over
+		// both ways, and the MediaController (the app, the notification) drives whichever plays
+		val player = CastPlayer.Builder(this)
+			.setLocalPlayer(exoPlayer)
+			.setRemotePlayer(RemoteCastPlayer.Builder(this).setMediaItemConverter(CastItemConverter()).build())
+			.build()
+
 		scrobbleManager =
 			AndroidScrobbleManager(
 				player,
@@ -219,7 +232,13 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 			.setCustomLayout(makeButtons(player))
 			.build()
 
-		makeEqualiser(player.audioSessionId)
+		makeEqualiser(exoPlayer.audioSessionId)
+
+		exoPlayer.addListener(object : Player.Listener {
+			override fun onAudioSessionIdChanged(audioSessionId: Int) {
+				makeEqualiser(exoPlayer.audioSessionId)
+			}
+		})
 
 		player.addListener(object : Player.Listener {
 			override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -228,10 +247,6 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 
 			override fun onRepeatModeChanged(repeatMode: Int) {
 				mediaSession?.setCustomLayout(makeButtons(player))
-			}
-
-			override fun onAudioSessionIdChanged(audioSessionId: Int) {
-				makeEqualiser(player.audioSessionId)
 			}
 		})
 
@@ -266,7 +281,7 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 		stopSelf()
 	}
 
-	class MediaSessionCallback(private val player: ExoPlayer) : MediaSession.Callback {
+	class MediaSessionCallback(private val player: Player) : MediaSession.Callback {
 		override fun onConnect(
 			session: MediaSession,
 			controller: MediaSession.ControllerInfo
@@ -305,6 +320,25 @@ class PlaybackService : MediaSessionService(), KoinComponent {
 
 			return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
 		}
+	}
+
+	/**
+	 * What the TV gets for a song: a downloaded one plays from this phone's storage, which the TV can't reach, so it
+	 * streams from the server instead (original quality: the TV is on Wi-Fi).
+	 */
+	private inner class CastItemConverter : MediaItemConverter {
+		private val default = DefaultMediaItemConverter()
+
+		override fun toMediaQueueItem(mediaItem: MediaItem): MediaQueueItem {
+			val local = mediaItem.localConfiguration
+			val builder = mediaItem.buildUpon()
+				// the receiver only needs to know it's audio; it plays the file by what it is
+				.setMimeType(local?.mimeType ?: MimeTypes.AUDIO_MPEG)
+			if (local?.uri?.scheme == "file") builder.setUri(sessionManager.api.getStreamUrl(mediaItem.mediaId, 0, null))
+			return default.toMediaQueueItem(builder.build())
+		}
+
+		override fun toMediaItem(mediaQueueItem: MediaQueueItem): MediaItem = default.toMediaItem(mediaQueueItem)
 	}
 
 	private fun makeEqualiser(sessionId: Int) {
@@ -1223,11 +1257,9 @@ class AndroidMediaPlayerViewModel(
 
 		if (artworkData != null) {
 			metadataBuilder.setArtworkData(artworkData, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
-		} else {
-			metadataBuilder.setArtworkUri(
-				coverArtId?.let { sessionManager.getCoverArtUrl(it).toUri() }
-			)
 		}
+		// always, next to the cached bytes: a Chromecast shows the cover from this URL
+		metadataBuilder.setArtworkUri(coverArtId?.let { sessionManager.getCoverArtUrl(it).toUri() })
 
 		val metadata = metadataBuilder.build()
 
