@@ -73,7 +73,7 @@
     <string name="subtitle_download_quality">ダウンロード音楽の音質を調整</string>
     <string name="subtitle_dynamic_theming">カバーアートに基づいてアルバムとアーティストの表示を動的にテーマ化する</string>
     <string name="subtitle_app_icon_designer">デザイン：%1$s</string>
-    <string name="subtitle_local_network_denied">サーバーにアクセスできるようにするには、Navicにローカルネットワークへのアクセス権限を付与する必要があります。</string>
+    <string name="subtitle_local_network_denied">サーバーにアクセスできるようにするには、Svirkaにローカルネットワークへのアクセス権限を付与する必要があります。</string>
     <string name="option_off">オフ</string>
     <string name="option_now_playing_background_style">バックグラウンドスタイル</string>
     <string name="option_now_playing_background_style_static">静的</string>

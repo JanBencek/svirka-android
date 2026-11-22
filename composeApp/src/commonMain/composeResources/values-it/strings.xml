@@ -34,7 +34,7 @@
     <string name="action_view_shares">Condivisioni</string>
     <string name="app_name" translatable="false">Svirka</string>
     <string name="info_action_is_permanent">Questa azione non può essere annullata</string>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Svirka %1$s</string>
     <string name="info_error">Qualcosa è andato storto.</string>
     <string name="info_error_hide">Nascondi dettagli</string>
     <string name="info_error_show">Mostra dettagli</string>
@@ -400,5 +400,5 @@
     <string name="subtitle_app_icon_designer">Disegnato da: %1$s</string>
     <string name="option_choose_app_icon">Icona dell'app</string>
     <string name="option_dynamic_theming">Tema dinamico</string>
-    <string name="info_app_icon">Cambiare icona, chiuderà Navic come richiesto da Android. Alcune icone potrebbero sembrare identiche nella home se il launcher applica un tema dinamico ai colori dell'icona.</string>
+    <string name="info_app_icon">Cambiare icona, chiuderà Svirka come richiesto da Android. Alcune icone potrebbero sembrare identiche nella home se il launcher applica un tema dinamico ai colori dell'icona.</string>
 </resources>

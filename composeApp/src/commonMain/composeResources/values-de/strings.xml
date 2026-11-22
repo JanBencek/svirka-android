@@ -30,7 +30,7 @@
     <string name="action_view_playlist">Playlist anzeigen</string>
     <string name="app_name" translatable="false">Svirka</string>
     <string name="info_action_is_permanent">Dies kann nicht rückgängig gemacht werden!</string>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Svirka %1$s</string>
     <string name="info_error">Etwas ist schiefgelaufen.</string>
     <string name="info_error_hide">Details ausblenden</string>
     <string name="info_error_show">Details anzeigen</string>
@@ -376,13 +376,13 @@
     <string name="info_repeat_off">Wiederholung aus</string>
     <string name="info_repeat_one">Wiederhole Titel</string>
     <string name="info_repeat_all">Wiederhole alle</string>
-    <string name="info_app_icon">Das Ändern des App-Symbols wird Navic schließen, da Android dies erfordert. Einige Symbole können auf deinem Startbildschirm identisch aussehen, wenn dein Launcher die Symbolfarben dynamisch anpasst.</string>
+    <string name="info_app_icon">Das Ändern des App-Symbols wird Svirka schließen, da Android dies erfordert. Einige Symbole können auf deinem Startbildschirm identisch aussehen, wenn dein Launcher die Symbolfarben dynamisch anpasst.</string>
     <string name="title_theme_mode">Themen Modus</string>
     <string name="title_track_info">Lied Informationen</string>
     <string name="subtitle_download_quality">Download Qualität</string>
     <string name="subtitle_dynamic_theming">Farben automatisch an das Cover anpassen</string>
     <string name="subtitle_app_icon_designer">Entworfen von: %1$s</string>
-    <string name="subtitle_local_network_denied">Navic benötigt Netzwerkberechtigungen um deinen Server zu erreichen.</string>
+    <string name="subtitle_local_network_denied">Svirka benötigt Netzwerkberechtigungen um deinen Server zu erreichen.</string>
     <string name="option_artist_image_shape">Form des Künstlerbilds</string>
     <string name="option_sort_year">Jahr</string>
     <string name="option_choose_app_icon">App-Symbol</string>

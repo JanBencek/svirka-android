@@ -103,7 +103,7 @@
     <string name="notice_copied">Скопировано в буфер обмена.</string>
     <string name="notice_expiry">Истекает через %1$s.</string>
     <string name="notice_loading_lyrics">Загружаем текст...\nЭто займет время.</string>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Svirka %1$s</string>
     <string name="info_action_is_permanent">Это не может быть отменено</string>
     <string name="info_error">Что-то пошло не так.</string>
     <string name="info_error_show">Показать детали</string>
@@ -385,7 +385,7 @@
     <string name="subtitle_download_quality">Настроить качество скачиваемой музыки</string>
     <string name="subtitle_dynamic_theming">Динамическое оформление страниц альбомов и исполнителей на основе обложек</string>
     <string name="subtitle_app_icon_designer">Дизайнер: %1$s</string>
-    <string name="subtitle_local_network_denied">Вам необходимо предоставить Navic доступ к вашей локальной сети, чтобы ваш сервер был доступен.</string>
+    <string name="subtitle_local_network_denied">Вам необходимо предоставить Svirka доступ к вашей локальной сети, чтобы ваш сервер был доступен.</string>
     <string name="option_artist_image_shape">Форма изображения исполнителя</string>
     <string name="option_choose_app_icon">Иконка приложения</string>
     <string name="option_stream_custom_quality">Выбрать качество стриминга</string>
@@ -408,7 +408,7 @@
     <string name="info_repeat_off">Повтор отключен</string>
     <string name="info_repeat_one">Повторить один</string>
     <string name="info_repeat_all">Повторить все</string>
-    <string name="info_app_icon">Смена иконки приложения закроет Navic, так как это необходимо в Android. Иконки могут выглядеть одинаково на вашем домашнем экране, если ваш лаунчер динамически подстраивает цвета иконок.</string>
+    <string name="info_app_icon">Смена иконки приложения закроет Svirka, так как это необходимо в Android. Иконки могут выглядеть одинаково на вашем домашнем экране, если ваш лаунчер динамически подстраивает цвета иконок.</string>
     <string name="option_palette_specification">Спецификация палитры</string>
     <string name="option_palette_style">Стиль палитры</string>
     <string name="notice_local_network_denied">В разрешении отказано</string>

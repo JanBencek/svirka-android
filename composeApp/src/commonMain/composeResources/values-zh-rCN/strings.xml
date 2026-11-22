@@ -164,7 +164,7 @@
     <string name="notice_copied">已复制。</string>
     <string name="notice_expiry">%1$s 后过期。</string>
     <string name="notice_loading_lyrics">加载歌词中...\n请稍等。</string>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Svirka %1$s</string>
     <string name="info_action_is_permanent">此操作无法撤销</string>
     <string name="info_error">出错了。</string>
     <string name="info_error_show">查看详情</string>
@@ -383,5 +383,5 @@
     <string name="subtitle_app_icon_designer">设计者：%1$s</string>
     <string name="option_choose_app_icon">应用程序图标</string>
     <string name="option_dynamic_theming">动态主题</string>
-    <string name="info_app_icon">更改应用图标时，Navic 会自动退出，这是 Android 系统的限制。如果您的启动器启用了主题图标（动态图标配色），部分图标在主屏幕上可能显示为相同的样式。</string>
+    <string name="info_app_icon">更改应用图标时，Svirka 会自动退出，这是 Android 系统的限制。如果您的启动器启用了主题图标（动态图标配色），部分图标在主屏幕上可能显示为相同的样式。</string>
 </resources>

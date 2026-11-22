@@ -218,7 +218,7 @@
         <item quantity="one">%1$d artiest</item>
         <item quantity="other">%1$d artiesten</item>
     </plurals>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Svirka %1$s</string>
     <string name="title_data_storage">Data en Opslag</string>
     <string name="title_sync_control">Synchronisatiecontrole</string>
     <string name="title_cache_management">Cache en Opslagbeheer</string>

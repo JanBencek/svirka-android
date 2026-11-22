@@ -25,7 +25,6 @@ import navic.composeapp.generated.resources.info_app_version
 import navic.composeapp.generated.resources.info_update
 import navic.composeapp.generated.resources.title_about
 import navic.composeapp.generated.resources.title_acknowledgements
-import navic.composeapp.generated.resources.title_chat
 import navic.composeapp.generated.resources.title_source
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -98,15 +97,9 @@ fun SettingsAboutScreen() {
 			}
 			Form {
 				FormRow(onClick = {
-					uriHandler.openUri("https://github.com/ssalggnikool/Navic")
+					uriHandler.openUri("https://github.com/JanBencek/svirka-android")
 				}) {
 					Text(stringResource(Res.string.title_source))
-					Icon(Icons.Outlined.ChevronForward, null)
-				}
-				FormRow(onClick = {
-					uriHandler.openUri("https://discord.gg/TBcnNX66PH")
-				}) {
-					Text(stringResource(Res.string.title_chat))
 					Icon(Icons.Outlined.ChevronForward, null)
 				}
 				FormRow(onClick = dropUnlessResumed {

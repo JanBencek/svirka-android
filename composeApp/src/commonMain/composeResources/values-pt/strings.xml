@@ -115,7 +115,7 @@
     <string name="notice_copied">Copiado para a área de transferência.</string>
     <string name="notice_expiry">Expira em %1$s.</string>
     <string name="notice_loading_lyrics">Carregando letra...\nIsso pode levar algum tempo.</string>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Svirka %1$s</string>
     <string name="info_action_is_permanent">Essa ação não pode ser desfeita!</string>
     <string name="info_error">Algo deu errado.</string>
     <string name="info_error_show">Mostrar detalhes</string>

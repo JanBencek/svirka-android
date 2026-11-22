@@ -136,7 +136,7 @@
     <string name="notice_copied">Panoya kopyalandı.</string>
     <string name="notice_expiry">%1$s içinde süresi dolacak.</string>
     <string name="notice_loading_lyrics">Şarkı sözleri yükleniyor...\nBu biraz zaman alabilir.</string>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Svirka %1$s</string>
     <string name="info_action_is_permanent">Bu işlem geri alınamaz</string>
     <string name="info_error">Bir şeyler ters gitti.</string>
     <string name="info_error_show">Ayrıntıları göster</string>

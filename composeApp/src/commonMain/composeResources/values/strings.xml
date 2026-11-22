@@ -88,7 +88,7 @@
 	<string name="subtitle_download_quality">Adjust the quality of downloaded music</string>
 	<string name="subtitle_dynamic_theming">Dynamically theme the album and artist view based on cover art</string>
 	<string name="subtitle_app_icon_designer">Designed by: %1$s</string>
-	<string name="subtitle_local_network_denied">You need to grant Navic access to your local network in order for your server to be reachable.</string>
+	<string name="subtitle_local_network_denied">You need to grant Svirka access to your local network in order for your server to be reachable.</string>
 	<string name="subtitle_equaliser">Tune &amp; enhance audio</string>
 	<string name="subtitle_equaliser_disabled">Not available when audio offload is enabled</string>
 
@@ -383,7 +383,7 @@
 	<string name="notice_queue_duplicate">This song is already in the queue. Do you really want to add it again?</string>
 	<string name="notice_local_network_denied">Permission denied</string>
 
-	<string name="info_app_version">Navic %1$s</string>
+	<string name="info_app_version">Svirka %1$s</string>
 	<string name="info_action_is_permanent">This action cannot be undone</string>
 	<string name="info_error">Something went wrong.</string>
 	<string name="info_error_show">Show details</string>
@@ -453,7 +453,7 @@
 	<string name="info_repeat_off">Repeat off</string>
 	<string name="info_repeat_one">Repeat one</string>
 	<string name="info_repeat_all">Repeat all</string>
-	<string name="info_app_icon">Changing the app icon will close Navic as Android requires this. Some icons may look identical on your home screen if your launcher dynamically themes the icon colours.</string>
+	<string name="info_app_icon">Changing the app icon will close Svirka as Android requires this. Some icons may look identical on your home screen if your launcher dynamically themes the icon colours.</string>
 	<string name="info_equaliser_unsupported">Your device does not support this feature.</string>
 
 	<string name="sideloading_warning_title">STOP, READ!</string>

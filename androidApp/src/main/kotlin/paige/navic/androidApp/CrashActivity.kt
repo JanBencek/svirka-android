@@ -74,7 +74,7 @@ class CrashActivity : ComponentActivity() {
 								text = "Something went wrong",
 								style = MaterialTheme.typography.headlineMedium
 							)
-							Text("Navic has encountered an unknown error and needs to close.")
+							Text("Svirka has encountered an unknown error and needs to close.")
 							Spacer(modifier = Modifier.height(16.dp))
 							SelectionContainer(
 								Modifier

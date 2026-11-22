@@ -48,7 +48,7 @@
     <string name="subtitle_streaming_quality">Juster kvaliteten på musikk ved strømming</string>
     <string name="subtitle_download_quality">Justerer kvaliteten på nedlastet musikk</string>
     <string name="subtitle_app_icon_designer">Designet av: %1$s</string>
-    <string name="subtitle_local_network_denied">Navic trenger tilgang til ditt lokalenettverk for å nå tjeneren.</string>
+    <string name="subtitle_local_network_denied">Svirka trenger tilgang til ditt lokalenettverk for å nå tjeneren.</string>
     <string name="option_off">Av</string>
     <string name="option_now_playing_background_style">Bakgrunnsstil</string>
     <string name="option_now_playing_background_style_static">Statisk</string>
@@ -217,7 +217,7 @@
     <string name="notice_loading_lyrics">Laster ned sangtekst...\nDette kan ta an stund.</string>
     <string name="notice_login_suggestion">Mente du...</string>
     <string name="notice_queue_duplicate">Denne sangen er alerede i avspillingskøen. Vil du virkelig legge den til igjen?</string>
-    <string name="info_app_version">Navic %1$s</string>
+    <string name="info_app_version">Svirka %1$s</string>
     <string name="info_action_is_permanent">Denne handlingen kan ikke angres</string>
     <string name="info_error">Noe gikk feil.</string>
     <string name="info_error_show">Vis detaljer</string>
