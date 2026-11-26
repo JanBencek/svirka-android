@@ -82,7 +82,9 @@ data class ConnectState(
 	val playing: Boolean,
 	val position: Double,
 	val at: Long = 0,
-	val volume: Double? // no default: Svirka wants the key even when null
+	val volume: Double?, // no default: Svirka wants the key even when null
+	val shuffle: Boolean? = null, // reported so Svirka on the PC shows this phone's shuffle and repeat
+	val repeat: String? = null // "off", "all" or "one"
 ) {
 	val song get() = queue.getOrNull(index)
 }
@@ -175,7 +177,8 @@ private data class HubTheme(val palette: String = "ocean", val mode: String = ""
 @Serializable
 private data class ConnectCommand(
 	val cmd: String,
-	val value: Double? = null,
+	val value: Double? = null, // remove: the row; move: from row [to]; repeat: Media3's mode
+	val to: Int? = null,
 	val state: ConnectState? = null,
 	val songs: List<ConnectSong>? = null, // enqueue: a Jam guest (`from`) added these, to play next when `next`
 	val from: String? = null,
@@ -568,6 +571,22 @@ class ConnectManager(
 			"skipTo" -> c.value?.let { player.playAt(it.toInt()) }
 			"load" -> c.state?.let { scope.launch { load(it) } }
 			"enqueue" -> scope.launch { enqueue(c.songs.orEmpty(), c.from.orEmpty(), c.next) }
+			// queue edits from the user's PC; rows index the queue this phone last reported. A Jam guest's queue mirrors the host's.
+			"remove", "move", "clear", "shuffle", "repeat" -> if (player.jam == null) queueEdit(c)
+		}
+	}
+
+	private fun queueEdit(c: ConnectCommand) {
+		when (c.cmd) {
+			"remove" -> c.value?.toInt()?.takeIf { it in player.uiState.value.queue.indices }?.let { player.removeFromQueue(it) }
+			"move" -> {
+				val rows = player.uiState.value.queue.indices
+				val from = c.value?.toInt()
+				if (from != null && from in rows && c.to != null && c.to in rows) player.moveQueueItem(from, c.to)
+			}
+			"clear" -> player.clearQueue()
+			"shuffle" -> player.toggleShuffle()
+			"repeat" -> c.value?.let { player.setRepeat(it.toInt()) }
 		}
 	}
 
@@ -623,14 +642,15 @@ class ConnectManager(
 		}
 	}
 
-	/** Hosting a Jam: a guest added [added] to our queue. */
+	/** Hosting a Jam: a guest added [added] to our queue. [from] "": the user queued them from their PC. */
 	private suspend fun enqueue(added: List<ConnectSong>, from: String, next: Boolean) {
 		// ponytail: by song id, so the same song queued twice shows the last guest's name
-		added.forEach { addedBy[it.id] = it.addedBy ?: from }
+		if (from.isNotEmpty()) added.forEach { addedBy[it.id] = it.addedBy ?: from }
 		val songs = added.mapNotNull { collections.getSongById(it.id) }
 		if (songs.isEmpty()) return
 		if (next) player.playNext(songs, notify = false)
 		else player.addToQueue(songs, notify = false)
+		if (from.isEmpty()) return
 		val title = added.first().title + if (added.size > 1) " +${added.size - 1}" else ""
 		snackBar.notify(Res.string.jam_enqueued, from, title)
 	}
@@ -643,7 +663,13 @@ class ConnectManager(
 			index = s.currentIndex,
 			playing = song != null && !s.isPaused,
 			position = (song?.duration?.inWholeMilliseconds ?: 0) / 1000.0 * s.progress,
-			volume = player.volume?.toDouble()
+			volume = player.volume?.toDouble(),
+			shuffle = s.isShuffleEnabled,
+			repeat = when (s.repeatMode) {
+				1 -> "one"
+				2 -> "all"
+				else -> "off"
+			}
 		)
 	}
 
@@ -656,7 +682,7 @@ class ConnectManager(
 			delay(1.seconds)
 			if (!connected) continue
 			val state = currentState()
-			val key = listOf(state.queue.map { it.id }, state.index, state.playing, state.volume)
+			val key = listOf(state.queue.map { it.id }, state.index, state.playing, state.volume, state.shuffle, state.repeat)
 			val last = lastReport
 			val expected = last?.second?.let {
 				it.position + if (it.playing) lastAt.elapsedNow().inWholeMilliseconds / 1000.0 else 0.0

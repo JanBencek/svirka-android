@@ -158,6 +158,9 @@ abstract class MediaPlayerViewModel(
 	/** Swap the queue around the song playing now (at [index] in [songs]) without restarting it. */
 	open fun replaceQueue(songs: List<DomainSong>, index: Int) {}
 
+	/** Repeat [mode] in Media3's numbers (0 off, 1 one, 2 all), set from another device. */
+	open fun setRepeat(mode: Int) {}
+
 	/**
 	 * Svirka Jam: set while this phone plays along with someone's Jam. Then the user's play/pause/skip/seek go to
 	 * the host and what they play or queue is added to the host's queue, instead of acting on this player.

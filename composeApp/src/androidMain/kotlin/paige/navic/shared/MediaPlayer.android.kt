@@ -877,8 +877,10 @@ class AndroidMediaPlayerViewModel(
 	override fun removeFromQueue(index: Int) {
 		trace("remove ${_uiState.value.queue.getOrNull(index)?.title} at $index")
 		viewModelScope.launch {
+			if (index !in _uiState.value.queue.indices) return@launch // two quick removes from the PC
 			controller?.removeMediaItem(index)
 			_uiState.update { state ->
+				if (index !in state.queue.indices) return@update state
 				val newQueue = state.queue.toMutableList().apply { removeAt(index) }
 				val newIndex = when {
 					index < state.currentIndex -> state.currentIndex - 1
@@ -900,8 +902,11 @@ class AndroidMediaPlayerViewModel(
 	override fun moveQueueItem(fromIndex: Int, toIndex: Int) {
 		trace("move $fromIndex to $toIndex")
 		viewModelScope.launch {
+			val rows = _uiState.value.queue.indices
+			if (fromIndex !in rows || toIndex !in rows) return@launch
 			controller?.moveMediaItem(fromIndex, toIndex)
 			_uiState.update { state ->
+				if (fromIndex !in state.queue.indices || toIndex !in state.queue.indices) return@update state
 				val newQueue = state.queue.toMutableList().apply {
 					val item = removeAt(fromIndex)
 					add(toIndex, item)
@@ -1188,6 +1193,11 @@ class AndroidMediaPlayerViewModel(
 				player.shuffleModeEnabled = !player.shuffleModeEnabled
 			}
 		}
+	}
+
+	override fun setRepeat(mode: Int) {
+		if (mode !in 0..2) return
+		viewModelScope.launch { controller?.repeatMode = mode }
 	}
 
 	override fun toggleRepeat() {
