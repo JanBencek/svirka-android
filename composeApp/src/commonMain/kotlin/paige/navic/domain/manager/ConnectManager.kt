@@ -609,7 +609,6 @@ class ConnectManager(
 	/** Playback handed over from another device: same queue, same song, same second. */
 	private suspend fun load(state: ConnectState) {
 		val target = state.song?.id
-		// ponytail: songs the phone hasn't synced yet are skipped; fetch them from the API if that bites
 		val songs = state.queue.mapNotNull { collections.getSongById(it.id) }
 		if (songs.isEmpty()) return
 		val index = songs.indexOfFirst { it.id == target }

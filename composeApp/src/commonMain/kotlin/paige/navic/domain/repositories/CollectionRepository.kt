@@ -71,9 +71,12 @@ class CollectionRepository(
 		.getAlbumsByArtistExcluding(artistId, albumId)
 		.map { it.map { album -> album.toDomainModel() } }
 
+	/** From the phone's library, else from the server: a Jam host or a friend can play a song this phone hasn't synced. */
+	// ponytail: one request per missing song; a long unsynced queue loads slowly, batch it if that bites
 	suspend fun getSongById(songId: String) = songDao
 		.getSongById(songId)
 		?.toDomainModel()
+		?: runCatching { sessionManager.api.getSong(songId).toEntity().toDomainModel() }.getOrNull()
 
 	suspend fun getAlbumInfo(albumId: String): ApiAlbumInfo {
 		return sessionManager.api.getAlbumInfo(albumId)
